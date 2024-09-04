@@ -1,4 +1,5 @@
 import ThemeProvider from '../components/ThemeProvider';
+import "../styles/globals.css";
 
 export const metadata = {
   title: 'CRM Gálago',

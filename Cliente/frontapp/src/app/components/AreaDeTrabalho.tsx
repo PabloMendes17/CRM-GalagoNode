@@ -20,7 +20,7 @@ const AreaDeTrabalho: React.FC<AreaDeTrabalhoProps> = ({ conteudo }) => {
   const Componente = ComponentMap[conteudo] || dynamic(() => import('../conteudo/inicio'));
 
   return (
-    <div className="w-[85%] h-[98%] flex-1 ml-2 bg-white dark:bg-slate-800 dark:text-white rounded-md overflow-auto">
+    <div className="w-[85%] h-[98%] flex-1 ml-2 bg-white dark:bg-slate-800 dark:text-white rounded-md overflow-hidden ">
       <Componente />
     </div>
   );
