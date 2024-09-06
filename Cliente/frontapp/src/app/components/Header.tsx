@@ -9,17 +9,18 @@ import { useTheme } from '../components/ThemeProvider';
 function Header(){
 
     const { isDarkMode, toggleDarkMode } = useTheme();
-    const [vendedor,setVendedor] = useState({NOME:''});
+    const [usuarioLogado,setUsuarioLogado] = useState({NOME:''});
     const [mostraLogout, setMostraLogout] = useState(false);
     const router = useRouter();
 
 
     useEffect(() => {
 
-        let credenciais = localStorage.getItem("CrmGalago:vendedor");
+        let credenciais = localStorage.getItem("CrmGalago:usuarioLogado");
         
         if(credenciais){
-            setVendedor(JSON.parse(credenciais));  
+            setUsuarioLogado(JSON.parse(credenciais)); 
+            
         } 
     }, []);
 
@@ -51,7 +52,7 @@ function Header(){
                 <div className="relative" onMouseLeave={()=>setMostraLogout(false)}>
                     <button className="flex flex-col items-center justify-center self-end px-2" onClick={()=>setMostraLogout(!mostraLogout)}>
                         <img className="h-10 rounded-full" src={imgUserSrc} alt="Imagem Perfil"/>
-                        <span className="dark:text-white">{vendedor.NOME}</span>
+                        <span className="dark:text-white">{usuarioLogado.NOME}</span>
                     </button>
                     {mostraLogout && (
                         <div className="absolute w-[100%] text-center bg-white dark:bg-slate-800 dark:text-white p-2 shadow-md rounded-md">

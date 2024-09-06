@@ -21,7 +21,7 @@ function Login(){
             setError("Senha inferior a 4 dígitos");
         }else{
             makeRequest.post("auth/login",{email,senha}).then((res)=>{
-                localStorage.setItem("CrmGalago:vendedor",JSON.stringify(res.data.data.vendedor))
+                localStorage.setItem("CrmGalago:usuarioLogado",JSON.stringify(res.data.data.usuarioLogado))
                 localStorage.setItem("CrmGalago:token",JSON.stringify(res.data.data.token))
                 setError('');
                 router.push("/home");
@@ -32,7 +32,7 @@ function Login(){
         }
     }
 
-    console.log(email,senha);
+    //console.log(email,senha);
 
     return(
 

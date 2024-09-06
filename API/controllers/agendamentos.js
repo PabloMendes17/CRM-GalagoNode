@@ -131,3 +131,5 @@ export const getVendedor = (req,res) =>{
             }
     });
 };
+
+export const getClientesFiltrados = (req,res) =>{};

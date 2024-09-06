@@ -3,7 +3,8 @@ import {getAgendaDeHoje,
         getClientes,
         getSituacaoAgenda,
         getTagAtendimentos,
-        getVendedor} from "../controllers/agendamentos.js"
+        getVendedor,
+        getClientesFiltrados} from "../controllers/agendamentos.js"
 
 const router= express.Router();
 
@@ -12,5 +13,6 @@ router.get("/clientes", getClientes);
 router.get("/siatuacaoagenda", getSituacaoAgenda);
 router.get("/tagatendimentos", getTagAtendimentos);
 router.get("/vendedores", getVendedor);
+router.get("/clientesfiltrados", getClientesFiltrados);
 
 export default router;

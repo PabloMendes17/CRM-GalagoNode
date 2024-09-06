@@ -7,6 +7,7 @@ import { MdEdit, MdDeleteForever,MdOutlineClose } from "react-icons/md";
 import { useState,useEffect } from "react";
 import { makeRequest } from "../../../axios";
 
+
 interface AgendaItem {
     CODIGO: number;
     CONTATO: string;
@@ -44,7 +45,9 @@ interface TagAtendimentoItem {
 }
 interface VendedorItem {
     CODIGO: number;
-    TAG:string;
+    NOME:string;
+    EMAIL:string;
+    usuario_PARAMetro:string;
 }
 
 function Agenda(){
@@ -53,7 +56,8 @@ function Agenda(){
     const [cliente, setCliente] = useState<ClienteItem[] | null>(null);
     const [situacaoAgenda, setSituacaoAgenda] = useState<SiatuacaoAgendaItem[] | null>(null);
     const [tagAtendimento, setTagAtendimento] = useState<TagAtendimentoItem[] | null>(null);
-    const [vendedor, setVendedor] = useState<VendedorItem[] | null>(null);
+    const [vendedor, setVendedor] = useState<VendedorItem[]>([]);
+    const [usuarioLogado, setUsuarioLogado] = useState<{ NOME: string,usuario_PARAMetro:string }>({ NOME: '',usuario_PARAMetro:'' });
 
     const [isFiltroVisible, setIsFiltroVisible] = useState<boolean>(false);
     const [abreNovaAgenda, setAbreNovaAgenda] = useState<boolean>(false);
@@ -77,14 +81,20 @@ function Agenda(){
                 setCliente(clientesRes.data.clientes || []);
                 setSituacaoAgenda(situacaoAgendaRes.data.situacaoAgenda || []);
                 setTagAtendimento(tagAtendimentoRes.data.tagAtendimento || []);
-                setVendedor(vendedoresRes.data.vendedores || []);
+                setVendedor(vendedoresRes.data.Operadores || []);
             } catch (error) {
                 console.error("Erro ao buscar dados:", error);
             }
         };
-
+        
+        let atualUser = localStorage.getItem("CrmGalago:usuarioLogado");
+        if(atualUser){
+            setUsuarioLogado(JSON.parse(atualUser));
+        }
+ 
         fetchData();
     }, []);
+
 
     function formatDateToBR(dateString: string): string {
         const date = new Date(dateString);
@@ -114,6 +124,22 @@ function Agenda(){
             setDeletaAgenda(false);
         }
     };
+
+    /*const handleFiltrarClientes= async()=>{
+        try{
+            const response =await makeRequest.get("/agendamentos/clientesfiltrados",{
+                params:{
+                    NOMERAZAO:filtroNomeRazao,
+                    DOCUMENTO:filtroDocumento,
+                    ATIVO:filtroAtivo,
+                },
+            });
+
+            setClienteFiltrado(response.data.clientes);
+        }catch(error){
+            console.error("Erro ao buscar cliente:",error);
+        }
+    };*/
 
     return(
         <div className="flex flex-col h-screen">
@@ -149,8 +175,21 @@ function Agenda(){
                                 <input type="text" id="filtroSituacaoAgenda"placeholder="Situação" className="border rounded p-1"/>
                             </div>
                             <div>
-                                <p>Código Cliente</p>
-                                <input type="text" id="filtroClienteAgenda"placeholder="Cliente" className="border rounded p-1"/>
+                                <p>Cod. CLiente</p>
+                                <div className='flex'>
+                                    <div className="w-[50%] m-0">
+                                        <input type="text" id="filtroSituacaoAgenda"placeholder="Situação" 
+                                            className="w-full h-full border border-gray-300 shadow-sm focus:outline-none
+                                                        focus:ring-2 focus:ring-blue-500 rounded-l p-1"/>
+                                    </div>
+                                    <div className='w-[40%] text-white m-0'>
+                                        <button type="button" id="btBuscaCliente" name="btBuscaCliente"
+                                                className=' border border-gray-300 shadow-sm border-transparent 
+                                                           bg-blue-600 focus:ring-2 focus:ring-blue-500 rounded-e p-1'>
+                                        Buscar</button>
+                                    </div>
+                                </div>
+                                
                             </div>
                             <button className="self-end bg-blue-500 text-white rounded px-4 py-2">
                                 Aplicar Filtros
@@ -202,153 +241,211 @@ function Agenda(){
                         </tbody>    
                     </table>
                         {abreNovaAgenda && (
-                            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+                            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-2">
                                 <div className="bg-white p-4 rounded-lg shadow-lg w-[80%]">
                                     <div className='flex justify-between text-blue-700 mb-4'>
                                         <h2 className="text-lg text-blue-700 font-bold">Nova Agenda</h2>
                                     </div>
                                     <form onSubmit={handleNovaAgenda} className="grid grid-cols-12 items-center">
-                                    <div className="col-span-2 m-1">
-                                        <div className="relative flex w-full rounded-lg shadow-sm">
-                                            <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
-                                                            text-sm disabled:pointer-events-none">
-                                                <input type="number" id="inputCodClienteAG" name="inputCodClienteAG"
-                                                        className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-l-lg 
-                                                                    shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        defaultValue='999999' required/>
-                                                <label htmlFor="inputCodClienteAG"
-                                                       className="absolute top-1 left-3 text-gray-500"
-                                                       >Cod Cliente
-                                                </label>    
-                                            </div>          
-                                            <button type="button" 
-                                                    className="py-3 px-4 inline-flex justify-center items-center 
-                                                               gap-x-2 text-sm font-semibold rounded-e-md border border-transparent 
-                                                               bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 
-                                                               focus:ring-blue-500"
-                                                    id="btBuscaAgenda">                            
-                                            Busca</button>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-6 m-1">
-                                        <div className="relative flex w-full rounded-lg shadow-sm">
-                                            <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
-                                                            text-sm disabled:pointer-events-none">
-                                                <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
-                                                                              shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                                        id="inputNomeClienteAG" name="inputNomeClienteAG" placeholder="Nome/Razão Social" defaultValue='Ainda Não Cadastrado' disabled/>
-                                                <label htmlFor="inputNomeClienteAG"
+                                        <div className="col-span-2 m-1">
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <input type="number" id="inputCodClienteAG" name="inputCodClienteAG"
+                                                            className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-l-lg 
+                                                                        shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            defaultValue='999999' required/>
+                                                    <label htmlFor="inputCodClienteAG"
                                                         className="absolute top-1 left-3 text-gray-500"
-                                                >Nome/Razão Social</label>
+                                                        >Cod Cliente
+                                                    </label>    
+                                                </div>          
+                                                <button type="button" 
+                                                        className="py-3 px-4 inline-flex justify-center items-center 
+                                                                gap-x-2 text-sm font-semibold rounded-e-md border border-transparent 
+                                                                bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 
+                                                                focus:ring-blue-500"
+                                                        id="btBuscaAgenda">                            
+                                                Busca</button>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-6 m-1">
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
+                                                                                shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                                            id="inputNomeClienteAG" name="inputNomeClienteAG" placeholder="Nome/Razão Social" defaultValue='Ainda Não Cadastrado' disabled/>
+                                                    <label htmlFor="inputNomeClienteAG"
+                                                            className="absolute top-1 left-3 text-gray-500"
+                                                    >Nome/Razão Social</label>
+                                                </div>
+                                            </div>    
+                                        </div>
+                                        <div className="col-span-2 m-1">
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
+                                                                    shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                                            aria-label="Default select example" id="Responsavel" name="Responsavel" required>
+                                                        <option selected disabled>Selecione</option>
+                                                        {vendedor.map((item,index) => (
+                                                           <option key={item.CODIGO} value={item.usuario_PARAMetro}>{item.usuario_PARAMetro}</option>    
+                                                        ))}
+                                                        
+                                                    </select> 
+                                                    <label htmlFor="Responsavel"
+                                                        className="absolute top-1 left-3 text-gray-500" 
+                                                    >Responsável</label>  
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-2 m-1">
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
+                                                                    shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                                            aria-label="Default select example" id="Operador" name="OPERADOR" required disabled>
+                                                        <option selected value={usuarioLogado.usuario_PARAMetro}>{usuarioLogado.usuario_PARAMetro}</option>
+                                                    </select> 
+                                                    <label htmlFor="Operador"
+                                                        className="absolute top-1 left-3 text-gray-500"
+                                                    >Angedado Por:</label>  
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-6 m-1">
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div  className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
+                                                                    shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                                            id="floatingContato" name="CONTATO" required/>
+                                                    <label htmlFor="floatingContato"
+                                                        className="absolute top-1 left-3 text-gray-500"
+                                                    >Contato</label>  
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-6 m-1">
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div  className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
+                                                                    shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            id="floatingAssunto" name="ASSUNTO" required/>
+                                                    <label htmlFor="floatingAssunto"
+                                                        className="absolute top-1 left-3 text-gray-500"
+                                                    >Assunto</label>  
+                                                </div>
+                                            </div>    
+                                        </div>
+                                        <div className="col-span-4 m-1">
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div  className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <input type="date" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
+                                                                    shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                                            id="floatingDtRegistro" name="DATA_GRAVACAO" required/>
+                                                    <label htmlFor="floatingDtRegistro"
+                                                        className="absolute top-1 left-3 text-gray-500" 
+                                                    >Data Registro</label>  
+                                                </div>
+                                            </div>    
+                                        </div>
+                                        <div className="col-span-4 m-1">
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div  className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <input type="date" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
+                                                                    shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                                            id="floatingDtAgenda" name="DATA_AGENDA" required/>
+                                                    <label htmlFor="floatingDtAgenda"
+                                                        className="absolute top-1 left-3 text-gray-500" 
+                                                    >Data Agenda</label>  
+                                                </div>
+                                            </div>    
+                                        </div>
+                                        <div className="col-span-4 m-1">
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div  className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <input type="time" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
+                                                                    shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                                            id="floatingHrAgenda" name="HORA_AGENDA" required/>
+                                                    <label htmlFor="floatingHrAgenda"
+                                                        className="absolute top-1 left-3 text-gray-500" 
+                                                    >Hora Agenda</label>  
+                                                </div>
+                                            </div>    
+                                        </div>
+                                        <div className="col-span-4 m-1">
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div  className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
+                                                                    shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            id="floatingSituacao" name="SITUACAO" required>
+                                                        <option selected disabled>Selecione</option>
+                                                        <option value=""></option>
+                                                    </select>
+                                                    <label htmlFor="floatingSituacao"
+                                                        className="absolute top-1 left-3 text-gray-500" 
+                                                    >Situacao</label>  
+                                                </div>
                                             </div>
                                         </div>    
-                                    </div>
-                                    <div className="col-span-2 m-1">
-                                        <div className="relative flex w-full rounded-lg shadow-sm">
-                                            <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
-                                                            text-sm disabled:pointer-events-none">
-                                                <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
-                                                                   shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                                        aria-label="Default select example" id="Responsavel" name="Responsavel" required>
-                                                    <option selected disabled>Selecione</option>
-                                                    <option value=""></option>
-                                                </select> 
-                                                <label htmlFor="Responsavel"
-                                                       className="absolute top-1 left-3 text-gray-500" 
-                                                >Responsável</label>  
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2 m-1">
-                                        <div className="relative flex w-full rounded-lg shadow-sm">
-                                            <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
-                                                            text-sm disabled:pointer-events-none">
-                                                <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
-                                                                   shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                                        aria-label="Default select example" id="Operador" name="OPERADOR" required>
-                                                    <option selected disabled>Selecione</option>
-                                                    <option value=""></option>
-                                                </select> 
-                                                <label htmlFor="Operador"
-                                                       className="absolute top-1 left-3 text-gray-500"
-                                                >Operador</label>  
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-6 m-1">
-                                        <div className="relative flex w-full rounded-lg shadow-sm">
-                                            <div  className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
-                                                            text-sm disabled:pointer-events-none">
-                                                <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
-                                                                   shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                                        id="floatingContato" name="CONTATO" required/>
-                                                <label htmlFor="floatingContato"
-                                                       className="absolute top-1 left-3 text-gray-500"
-                                                >Contato</label>  
-                                            </div>
-                                        </div>
-                                    </div>
-                                        <div className="col-span-6 m-1">
-                                            <div  className="form-floating mb-3">
-                                                <input type="text" className="form-control" id="floatingAssunto" name="ASSUNTO" required/>
-                                                <label htmlFor="floatingAssunto"
-                                                       className="absolute top-1 left-3 text-gray-500"
-                                                >Assunto</label>  
-                                            </div>
-                                        </div>
                                         <div className="col-span-4 m-1">
-                                            <div  className="form-floating mb-3">
-                                                <input type="date" className="form-control" id="floatingDtRegistro" name="DATA_GRAVACAO" required/>
-                                                <label htmlFor="floatingDtRegistro">Data Registro</label>  
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div  className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
+                                                                    shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            id="Tipo" name="TIPO" required>
+                                                        <option selected disabled>Selecione</option>
+                                                        <option value="AGENDAMENTO 1H">AGENDAMENTO 1H</option>
+                                                        <option value="AGENDAMENTO 1H:30m">AGENDAMENTO 1H:30m</option>
+                                                        <option value="AGENDAMENTO 2H">AGENDAMENTO 2H</option>
+                                                    </select> 
+                                                <label htmlFor="Tipo"
+                                                    className="absolute top-1 left-3 text-gray-500"  
+                                                >Tipo</label>  
+                                                </div>
                                             </div>
-                                        </div>
+                                        </div>    
                                         <div className="col-span-4 m-1">
-                                            <div  className="form-floating mb-3">
-                                                <input type="date" className="form-control" id="floatingDtAgenda" name="DATA_AGENDA" required/>
-                                                <label htmlFor="floatingDtAgenda">Data Agenda</label>  
+                                            <div className="relative flex w-full rounded-lg shadow-sm">
+                                                <div  className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                text-sm disabled:pointer-events-none">
+                                                    <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-lg 
+                                                                    shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                                            id="Telefone" name="TELEFONE1" required/>
+                                                    <label htmlFor="Telefone"
+                                                        className="absolute top-1 left-3 text-gray-500"  
+                                                    >Telefone</label>  
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="col-span-4 m-1">
-                                            <div  className="form-floating mb-3">
-                                                <input type="time" className="form-control" id="floatingHrAgenda" name="HORA_AGENDA" required/>
-                                                <label htmlFor="floatingHrAgenda">Hora Agenda</label>  
+                                        </div>    
+                                        <div className="col-span-12 m-1">
+                                            <div className="relative flex w-full h-full rounded-lg shadow-sm">
+                                                <textarea className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-l-lg 
+                                                                        shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 h-40" 
+                                                        id="floatingDetalhes" name="HISTORICO" ></textarea>
+                                                <label htmlFor="floatingDetalhes"
+                                                    className="absolute top-1 left-3 text-gray-500"  
+                                                >Detalhes do Registro</label>
                                             </div>
-                                        </div>
-                                        <div className="col-span-4 m-1">
-                                            <div  className="form-floating mb-3">
-                                            <select className="form-select" aria-label="Default select example" id="floatingSituacao" name="SITUACAO" required>
-                                                <option selected disabled>Selecione</option>
-                                                @foreach($situacoes as $situacao)
-                                                <option value="{{$situacao->DESCRICAO}}"></option>
-                                                @endforeach
-                                                </select>
-                                                <label htmlFor="floatingSituacao">Situacao</label>  
+                                        </div>    
+                                        <div className="col-span-12 m-1">
+                                            <div className="relative flex w-full h-full rounded-lg shadow-sm justify-end">
+                                                <button type="button" onClick={() => setAbreNovaAgenda(false)} 
+                                                            className="bg-gray-300 text-black rounded px-4 py-2 mx-1"
+                                                >Cancelar</button>
+                                                <button type="submit" className="bg-blue-500 text-white rounded px-4 py-2 mx-1">Salvar</button>
                                             </div>
-                                        </div>
-                                        <div className="col-span-4 m-1">
-                                            <div  className="form-floating mb-3">
-                                                <select className="form-select" aria-label="Default select example" id="Tipo" name="TIPO" required>
-                                                    <option selected disabled>Selecione</option>
-                                                    <option value="AGENDAMENTO 1H">AGENDAMENTO 1H</option>
-                                                    <option value="AGENDAMENTO 1H:30m">AGENDAMENTO 1H:30m</option>
-                                                    <option value="AGENDAMENTO 2H">AGENDAMENTO 2H</option>
-                                                </select> 
-                                                <label htmlFor="Tipo">Tipo</label>  
-                                            </div>
-                                        </div>
-                                        <div className="col-span-4 m-1">
-                                            <div  className="form-floating mb-3">
-                                                <input type="text" className="form-control" id="Telefone" name="TELEFONE1" required/>
-
-                                                <label htmlFor="Telefone">Telefone</label>  
-                                            </div>
-                                        </div>
-                                        <div className="col-span-12">
-                                            <textarea className="form-control" placeholder="Detalhes do Registro" id="floatingDetalhes" name="HISTORICO" ></textarea>
-                                            <label htmlFor="floatingDetalhes">Detalhes</label>
-                                        </div>
-                                        <button type="submit" className="bg-blue-500 text-white rounded px-4 py-2">Salvar</button>
-                                        <button type="button" onClick={() => setAbreNovaAgenda(false)} className="bg-gray-300 text-black rounded px-4 py-2">Cancelar</button>
+                                        </div>    
                                     </form>
                                 </div>
                             </div>
