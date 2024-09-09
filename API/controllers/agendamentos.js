@@ -46,26 +46,48 @@ export const getAgendaDeHoje = (req, res)=>{
 };
 
 export const getClientes = (req,res) =>{
+    
+    const pagina = parseInt(req.query.pagina) || 1;
+    const resultadoPorPagina = parseInt(req.query.resultadoPorPagina) || 10;
+    const offset = (pagina - 1) * resultadoPorPagina;
+
     db.query(
-        'SELECT * FROM CLIENTES',async(error, data)=>{
-            if(error){
+        'SELECT COUNT(*) AS total FROM CLIENTES',(countError, countData)=>{
+            if(countError){
                 return res.status(500).json({
                     msg:"O servidor esta indisponível no momento entre em contato com o suporte",
                 });
             }
-            if(data.length===0){
+  
+            const totalClientes = countData[0].total;
 
-                return res.status(200).json({
-                    msg:'NÃO HÁ CLIENTES CADASTRADOS',
-                });
-            }else{
-                
-                return res.status(200).json({
-                    clientes:data,
-                });
-            }
+            db.query(
+                `SELECT 
+                    CODIGO, NOME, NOMEFANTASIA, CNPJ, CPF, DESATIVADO
+                 FROM CLIENTES LIMIT ? OFFSET ?`,
+                [resultadoPorPagina, offset],
+                (error, data) => {
+                    if (error) {
+                        return res.status(500).json({
+                            msg: "O servidor está indisponível no momento. Entre em contato com o suporte.",
+                        });
+                    }
+
+                    if (data.length === 0) {
+                        return res.status(200).json({
+                            msg: 'NÃO HÁ CLIENTES CADASTRADOS',
+                        });
+                    } else {
+                        return res.status(200).json({
+                            clientes: data,
+                            total: totalClientes
+                        });
+                    }
+                }
+            );
     });
-};
+};    
+
 export const getSituacaoAgenda = (req,res) =>{
     db.query(
         'SELECT * FROM SITUACAO_AGENDA',async(error, data)=>{

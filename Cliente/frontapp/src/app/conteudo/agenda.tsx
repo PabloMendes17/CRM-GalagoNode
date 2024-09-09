@@ -53,7 +53,11 @@ interface VendedorItem {
 function Agenda(){
 
     const [agenda, setAgenda] = useState<AgendaItem[] | null>(null);
-    const [cliente, setCliente] = useState<ClienteItem[] | null>(null);
+    const [cliente, setCliente] = useState<ClienteItem[]>([]);
+    const [paginaClienteBusca, setpaginaClienteBusca] = useState(1);
+    const [clienteBuscaPorPagina, setClienteBuscaPorPagina] = useState(10);
+    const [totalClientes, setTotalClientes] = useState(0);
+    const [clienteSelecionado, setClienteSelecionado] = useState(null);
     const [situacaoAgenda, setSituacaoAgenda] = useState<SiatuacaoAgendaItem[] | null>(null);
     const [tagAtendimento, setTagAtendimento] = useState<TagAtendimentoItem[] | null>(null);
     const [vendedor, setVendedor] = useState<VendedorItem[]>([]);
@@ -61,27 +65,32 @@ function Agenda(){
 
     const [isFiltroVisible, setIsFiltroVisible] = useState<boolean>(false);
     const [abreNovaAgenda, setAbreNovaAgenda] = useState<boolean>(false);
+    const [abreBuscaCliente, setAbreBuscaCliente] = useState<boolean>(false);
     const [selecionaCodigo, setSelecionaCodigo] = useState<AgendaItem | null>(null);
     const [mostraDetalhes, setMostraDetalhes] = useState<boolean>(false);
     const [alteraAgenda, setAlteraAgenda] = useState<boolean>(false);
     const [deletaAgenda, setDeletaAgenda] = useState<boolean>(false);
+
     useEffect(() => {
 
         const fetchData = async () => {
             try {
                 const [agendaRes, clientesRes, situacaoAgendaRes, tagAtendimentoRes, vendedoresRes] = await Promise.all([
                     makeRequest.get("agendamentos/agendahoje"),
-                    makeRequest.get("agendamentos/clientes"),
-                    makeRequest.get("agendamentos/siatuacaoagenda"),
+                    makeRequest.get(`agendamentos/clientes?pagina=${paginaClienteBusca}&resultadoPorPagina=${clienteBuscaPorPagina}`),
+                    makeRequest.get("agendamentos/situacaoagenda"),
                     makeRequest.get("agendamentos/tagatendimentos"),
                     makeRequest.get("agendamentos/vendedores")
                 ]);
 
                 setAgenda(agendaRes.data.agendahoje || []);
-                setCliente(clientesRes.data.clientes || []);
+                setCliente(clientesRes.data.clientes||[]);
+                setTotalClientes(clientesRes.data.total || 0);
                 setSituacaoAgenda(situacaoAgendaRes.data.situacaoAgenda || []);
                 setTagAtendimento(tagAtendimentoRes.data.tagAtendimento || []);
                 setVendedor(vendedoresRes.data.Operadores || []);
+               
+
             } catch (error) {
                 console.error("Erro ao buscar dados:", error);
             }
@@ -93,7 +102,7 @@ function Agenda(){
         }
  
         fetchData();
-    }, []);
+    }, [paginaClienteBusca, clienteBuscaPorPagina]);
 
 
     function formatDateToBR(dateString: string): string {
@@ -108,6 +117,10 @@ function Agenda(){
     const handleNovaAgenda = () => {
 
         setAbreNovaAgenda(false);
+    };
+    const handleBuscaCliente = () => {
+
+        setAbreBuscaCliente(false);
     };
     const handleDetalhes = () => {
 
@@ -185,7 +198,8 @@ function Agenda(){
                                     <div className='w-[40%] text-white m-0'>
                                         <button type="button" id="btBuscaCliente" name="btBuscaCliente"
                                                 className=' border border-gray-300 shadow-sm border-transparent 
-                                                           bg-blue-600 focus:ring-2 focus:ring-blue-500 rounded-e p-1'>
+                                                           bg-blue-600 focus:ring-2 focus:ring-blue-500 rounded-e p-1'
+                                                onClick={() => setAbreBuscaCliente(true)}>
                                         Buscar</button>
                                     </div>
                                 </div>
@@ -447,6 +461,103 @@ function Agenda(){
                                             </div>
                                         </div>    
                                     </form>
+                                </div>
+                            </div>
+                        )}
+                        {abreBuscaCliente &&(
+                            <div className='fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50'>
+                                <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg w-full max-w-md divide-y divide-black dark:divide-gray-100">
+                                    <div className='flex justify-between text-blue-700 mb-4'>
+                                        <h1 className="text-lg font-bold">Selecionar ou Buscar</h1>
+                                        <button type="button" onClick={() => setAbreBuscaCliente(false)} className="text-black dark:text-gray-100"><MdOutlineClose/></button>   
+                                    </div>
+                                    <div className='mb-2'>
+                                        <div className='flex flex-wrap'>
+                                            <div className='flex flex-wrap'>
+                                               <div className='p-1'>
+                                                    <p>CNPJ ou CPF</p>
+                                                    <input type="text" id="filtroDocumento" name='filtroDocumento' 
+                                                           placeholder="CNPJ/CPF" className="border rounded p-1"/>
+                                               </div>
+                                               <div className='p-1'>
+                                                    <p>NOME ou NOME FANTASIA</p>
+                                                    <input type="text" id="filtroNomeRazao" name='filtroNomeRazao' 
+                                                           placeholder="Nome/NomeFantasia" className="border rounded p-1"/> 
+                                               </div>   
+                                            </div>
+                                            <div className=''>
+                                                <div className='min-w-full divide-y divide-gray-500 text-center text-xs'>
+                                                    <table>
+                                                        <thead className=" bg-blue-950 dark:bg-gray-900">
+                                                            <tr>
+                                                                <th className="">CODIGO</th>
+                                                                <th className="">NOME/RAZAO</th>
+                                                                <th className="">DOCUMENTO</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {cliente.map((item,index) => (
+                                                                <tr key={item.CODIGO}
+                                                                >
+                                                                    <td>{item.CODIGO}</td>
+                                                                    <td>{item.NOME}</td>
+                                                                    <td>{item.CNPJ?item.CNPJ:item.CPF}</td>
+                                                                </tr>    
+                                                            ))}
+                                                        </tbody>    
+                                                    </table>       
+                                                </div>
+                                            </div>    
+                                        </div>
+                                        <nav className="flex justify-center items-center -space-x-px" aria-label="Pagination">
+                                            <button type="button" className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex 
+                                                                            justify-center items-center gap-x-1.5 text-sm first:rounded-s-lg 
+                                                                            last:rounded-e-lg border border-gray-200 text-gray-800 
+                                                                            hover:bg-gray-100 focus:outline-none focus:bg-gray-100 
+                                                                            disabled:opacity-50 disabled:pointer-events-none 
+                                                                            dark:border-neutral-700 dark:text-white 
+                                                                            dark:hover:bg-white/10 dark:focus:bg-white/10" 
+                                                onClick={() => setpaginaClienteBusca(prevPage => Math.max(prevPage - 1, 1))}>
+                                                <svg className="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" 
+                                                                width="24" height="24" viewBox="0 0 24 24" fill="none" 
+                                                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="m15 18-6-6 6-6"></path>
+                                                </svg>
+                                                <span className="sr-only">Anterior</span>
+                                            </button>
+                                            <button type="button" className="min-h-[38px] min-w-[38px] flex justify-center items-center bg-gray-200 text-gray-800 
+                                                                             border border-gray-200 py-2 px-3 text-sm first:rounded-s-lg last:rounded-e-lg focus:outline-none 
+                                                                             focus:bg-gray-300 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-600 
+                                                                             dark:border-neutral-700 dark:text-white dark:focus:bg-neutral-500" aria-current="page"
+                                                onClick={() => setpaginaClienteBusca(prevPage => prevPage)}>{paginaClienteBusca}</button>
+                                            <button type="button" className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-200 
+                                                                             text-gray-800 hover:bg-gray-100 py-2 px-3 text-sm first:rounded-s-lg last:rounded-e-lg 
+                                                                             focus:outline-none focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none 
+                                                                             dark:border-neutral-700 dark:text-white dark:hover:bg-white/10 dark:focus:bg-white/10"
+                                                onClick={() => setpaginaClienteBusca(prevPage => prevPage + 1)}>{paginaClienteBusca+1}</button>
+                                            <button type="button" className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-200 
+                                                                             text-gray-800 hover:bg-gray-100 py-2 px-3 text-sm first:rounded-s-lg last:rounded-e-lg 
+                                                                             focus:outline-none focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none 
+                                                                             dark:border-neutral-700 dark:text-white dark:hover:bg-white/10 dark:focus:bg-white/10"
+                                                onClick={() => setpaginaClienteBusca(prevPage => prevPage + 2)}>{paginaClienteBusca+2}</button>
+                                            <button type="button" className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex 
+                                                                            justify-center items-center gap-x-1.5 text-sm first:rounded-s-lg 
+                                                                            last:rounded-e-lg border border-gray-200 text-gray-800 
+                                                                            hover:bg-gray-100 focus:outline-none focus:bg-gray-100 
+                                                                            disabled:opacity-50 disabled:pointer-events-none 
+                                                                            dark:border-neutral-700 dark:text-white dark:hover:bg-white/10 
+                                                                            dark:focus:bg-white/10" aria-label="Next" 
+                                                onClick={() => setpaginaClienteBusca(prevPage => prevPage + 4)}>
+                                                <span className="sr-only">próximo</span>
+                                                <svg className="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="m9 18 6-6-6-6"></path>
+                                                </svg>
+                                            </button>
+                                        </nav>
+                                    </div>
+                                    <div className='flex justify-end p-2'>
+                                        <button type="button" onClick={() => setAbreBuscaCliente(false)} className="bg-gray-300 text-black rounded px-4 py-1">Fechar</button>   
+                                    </div>    
                                 </div>
                             </div>
                         )}

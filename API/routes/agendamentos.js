@@ -10,7 +10,7 @@ const router= express.Router();
 
 router.get("/agendahoje", getAgendaDeHoje);
 router.get("/clientes", getClientes);
-router.get("/siatuacaoagenda", getSituacaoAgenda);
+router.get("/situacaoagenda", getSituacaoAgenda);
 router.get("/tagatendimentos", getTagAtendimentos);
 router.get("/vendedores", getVendedor);
 router.get("/clientesfiltrados", getClientesFiltrados);
