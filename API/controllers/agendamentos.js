@@ -76,6 +76,7 @@ export const getClientes = (req,res) =>{
                     if (data.length === 0) {
                         return res.status(200).json({
                             msg: 'NÃO HÁ CLIENTES CADASTRADOS',
+                            total: totalClientes
                         });
                     } else {
                         return res.status(200).json({

@@ -54,11 +54,12 @@ function Agenda(){
 
     const [agenda, setAgenda] = useState<AgendaItem[] | null>(null);
     const [cliente, setCliente] = useState<ClienteItem[]>([]);
-    const [paginaClienteBusca, setpaginaClienteBusca] = useState(1);
-    const [clienteBuscaPorPagina, setClienteBuscaPorPagina] = useState(10);
+    const [paginaAtualNaBuscaCliente, setPaginaAtualNaBuscaCliente] = useState(1);
+    const [quantidadeDeClientesNaPaginaBuscaCliente, setQuantidadeDeClientesNaPaginaBuscaCliente] = useState(10);
     const [totalClientes, setTotalClientes] = useState(0);
+    const [limiteDePaginasNaNavegacaoDaBuscaCliente, setLimiteDePaginasNaNavegacaoDaBuscaCliente]= useState(1);
     const [clienteSelecionado, setClienteSelecionado] = useState(null);
-    const [situacaoAgenda, setSituacaoAgenda] = useState<SiatuacaoAgendaItem[] | null>(null);
+    const [situacaoAgenda, setSituacaoAgenda] = useState<SiatuacaoAgendaItem[]>([]);
     const [tagAtendimento, setTagAtendimento] = useState<TagAtendimentoItem[] | null>(null);
     const [vendedor, setVendedor] = useState<VendedorItem[]>([]);
     const [usuarioLogado, setUsuarioLogado] = useState<{ NOME: string,usuario_PARAMetro:string }>({ NOME: '',usuario_PARAMetro:'' });
@@ -71,38 +72,54 @@ function Agenda(){
     const [alteraAgenda, setAlteraAgenda] = useState<boolean>(false);
     const [deletaAgenda, setDeletaAgenda] = useState<boolean>(false);
 
+    const quantidadeDePaginasNaNavegacaoDaBuscaCliente = 3    
+    const paginaInicialNaBuscaClientes = Math.max(1, Math.min(paginaAtualNaBuscaCliente - Math.floor(quantidadeDePaginasNaNavegacaoDaBuscaCliente / 2), 
+                                                     limiteDePaginasNaNavegacaoDaBuscaCliente - quantidadeDePaginasNaNavegacaoDaBuscaCliente + 1));
+    const paginaFinalNaBuscaClientes = Math.min(limiteDePaginasNaNavegacaoDaBuscaCliente,
+                                                paginaInicialNaBuscaClientes + quantidadeDePaginasNaNavegacaoDaBuscaCliente - 1);
+
     useEffect(() => {
 
         const fetchData = async () => {
             try {
                 const [agendaRes, clientesRes, situacaoAgendaRes, tagAtendimentoRes, vendedoresRes] = await Promise.all([
                     makeRequest.get("agendamentos/agendahoje"),
-                    makeRequest.get(`agendamentos/clientes?pagina=${paginaClienteBusca}&resultadoPorPagina=${clienteBuscaPorPagina}`),
+                    makeRequest.get(`agendamentos/clientes?pagina=${paginaAtualNaBuscaCliente}&resultadoPorPagina=${quantidadeDeClientesNaPaginaBuscaCliente}`),
                     makeRequest.get("agendamentos/situacaoagenda"),
                     makeRequest.get("agendamentos/tagatendimentos"),
                     makeRequest.get("agendamentos/vendedores")
                 ]);
-
+                
                 setAgenda(agendaRes.data.agendahoje || []);
                 setCliente(clientesRes.data.clientes||[]);
-                setTotalClientes(clientesRes.data.total || 0);
+                setTotalClientes(clientesRes.data.total||0);
                 setSituacaoAgenda(situacaoAgendaRes.data.situacaoAgenda || []);
                 setTagAtendimento(tagAtendimentoRes.data.tagAtendimento || []);
                 setVendedor(vendedoresRes.data.Operadores || []);
-               
+
+                console.log('Página Atual:', paginaAtualNaBuscaCliente);
 
             } catch (error) {
                 console.error("Erro ao buscar dados:", error);
             }
         };
         
+        if(totalClientes>10){
+            
+            const totalPages = Math.ceil(totalClientes / quantidadeDeClientesNaPaginaBuscaCliente);
+            setLimiteDePaginasNaNavegacaoDaBuscaCliente(totalPages);
+
+        }else{
+            setLimiteDePaginasNaNavegacaoDaBuscaCliente(1); 
+        };
+
         let atualUser = localStorage.getItem("CrmGalago:usuarioLogado");
         if(atualUser){
             setUsuarioLogado(JSON.parse(atualUser));
-        }
+        };
  
         fetchData();
-    }, [paginaClienteBusca, clienteBuscaPorPagina]);
+    }, [paginaAtualNaBuscaCliente, quantidadeDeClientesNaPaginaBuscaCliente, totalClientes]);
 
 
     function formatDateToBR(dateString: string): string {
@@ -136,6 +153,17 @@ function Agenda(){
 
             setDeletaAgenda(false);
         }
+    };
+    const handlePaginaAnterior = () => {
+        setPaginaAtualNaBuscaCliente(prevPage => Math.max(prevPage - quantidadeDePaginasNaNavegacaoDaBuscaCliente, 1));
+    };
+
+    const handleProximaPagina = () => {
+        setPaginaAtualNaBuscaCliente(prevPage => Math.min(prevPage + quantidadeDePaginasNaNavegacaoDaBuscaCliente, limiteDePaginasNaNavegacaoDaBuscaCliente));
+    };
+
+    const handlePageNumberClick = (pageNumber) => {
+        setPaginaAtualNaBuscaCliente(pageNumber);
     };
 
     /*const handleFiltrarClientes= async()=>{
@@ -174,28 +202,29 @@ function Agenda(){
                         </span>                   
                     </div>
                     <div className={`transition-max-height duration-500 ease-in-out overflow-hidden ${isFiltroVisible ? 'max-h-screen' : 'max-h-0'}`}>
-                        <div className="h-full flex flex-wrap items-center space-x-2 p-4 text-black bg-gray-100 dark:bg-gray-800">
-                            <div>
+                        <div className="h-full flex flex-wrap items-center md:space-x-2 p-4 text-black bg-gray-100 dark:bg-gray-800"
+                                        >
+                            <div className='w-full md:max-w-min'>
                                 <p>De:</p>
-                                <input type="date" id="filtroIdInicial" placeholder="Date" className="border rounded p-1"/>
+                                <input type="date" id="filtroIdInicial" placeholder="Date" className="w-full md:max-w-min border rounded p-1"/>
                             </div>
-                            <div>
+                            <div className='w-full md:max-w-min'>
                                 <p>Até:</p>
-                                <input type="date" id="filtroIdFinal"placeholder="Date" className="border rounded p-1"/>
+                                <input type="date" id="filtroIdFinal"placeholder="Date" className="w-full md:max-w-min border rounded p-1"/>
                             </div>
-                            <div>
+                            <div className='w-full md:max-w-max'>
                                 <p>Situação</p>
-                                <input type="text" id="filtroSituacaoAgenda"placeholder="Situação" className="border rounded p-1"/>
+                                <input type="text" id="filtroSituacaoAgenda"placeholder="Situação" className="w-full border rounded p-1"/>
                             </div>
-                            <div>
+                            <div className='w-full md:max-w-max'>
                                 <p>Cod. CLiente</p>
-                                <div className='flex'>
-                                    <div className="w-[50%] m-0">
-                                        <input type="text" id="filtroSituacaoAgenda"placeholder="Situação" 
+                                <div className='flex w-full md:max-w-max'>
+                                    <div className="w-[85%] md:w-[50%] m-0">
+                                        <input type="text" id="filtroSituacaoAgenda"placeholder="99999" 
                                             className="w-full h-full border border-gray-300 shadow-sm focus:outline-none
                                                         focus:ring-2 focus:ring-blue-500 rounded-l p-1"/>
                                     </div>
-                                    <div className='w-[40%] text-white m-0'>
+                                    <div className='w-[10%] md:w-[40%] text-white m-0'>
                                         <button type="button" id="btBuscaCliente" name="btBuscaCliente"
                                                 className=' border border-gray-300 shadow-sm border-transparent 
                                                            bg-blue-600 focus:ring-2 focus:ring-blue-500 rounded-e p-1'
@@ -260,7 +289,7 @@ function Agenda(){
                                     <div className='flex justify-between text-blue-700 mb-4'>
                                         <h2 className="text-lg text-blue-700 font-bold">Nova Agenda</h2>
                                     </div>
-                                    <form onSubmit={handleNovaAgenda} className="grid grid-cols-12 items-center">
+                                    <form onSubmit={handleNovaAgenda} className="flex flex-wrap md:grid grid-cols-12 items-center">
                                         <div className="col-span-2 m-1">
                                             <div className="relative flex w-full rounded-lg shadow-sm">
                                                 <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
@@ -403,7 +432,9 @@ function Agenda(){
                                                                     shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                             id="floatingSituacao" name="SITUACAO" required>
                                                         <option selected disabled>Selecione</option>
-                                                        <option value=""></option>
+                                                            {situacaoAgenda.map((item,index) => (
+                                                            <option key={item.CODIGO} value={item.DESCRICAO}>{item.DESCRICAO}</option>    
+                                                         ))}
                                                     </select>
                                                     <label htmlFor="floatingSituacao"
                                                         className="absolute top-1 left-3 text-gray-500" 
@@ -445,7 +476,7 @@ function Agenda(){
                                         <div className="col-span-12 m-1">
                                             <div className="relative flex w-full h-full rounded-lg shadow-sm">
                                                 <textarea className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 rounded-l-lg 
-                                                                        shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 h-40" 
+                                                                        shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 h-40 md:h-52" 
                                                         id="floatingDetalhes" name="HISTORICO" ></textarea>
                                                 <label htmlFor="floatingDetalhes"
                                                     className="absolute top-1 left-3 text-gray-500"  
@@ -466,13 +497,13 @@ function Agenda(){
                         )}
                         {abreBuscaCliente &&(
                             <div className='fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50'>
-                                <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg w-full max-w-md divide-y divide-black dark:divide-gray-100">
+                                <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg w-full max-w-2xl divide-y divide-black dark:divide-gray-100">
                                     <div className='flex justify-between text-blue-700 mb-4'>
                                         <h1 className="text-lg font-bold">Selecionar ou Buscar</h1>
                                         <button type="button" onClick={() => setAbreBuscaCliente(false)} className="text-black dark:text-gray-100"><MdOutlineClose/></button>   
                                     </div>
-                                    <div className='mb-2'>
-                                        <div className='flex flex-wrap'>
+                                    <div className='mb-4'>
+                                        <div className='flex-wrap mb-4'>
                                             <div className='flex flex-wrap'>
                                                <div className='p-1'>
                                                     <p>CNPJ ou CPF</p>
@@ -483,78 +514,86 @@ function Agenda(){
                                                     <p>NOME ou NOME FANTASIA</p>
                                                     <input type="text" id="filtroNomeRazao" name='filtroNomeRazao' 
                                                            placeholder="Nome/NomeFantasia" className="border rounded p-1"/> 
-                                               </div>   
+                                               </div>
+                                               <button className="self-end bg-blue-500 text-white rounded px-4 py-2">
+                                                    Buscar
+                                                </button>   
                                             </div>
-                                            <div className=''>
-                                                <div className='min-w-full divide-y divide-gray-500 text-center text-xs'>
-                                                    <table>
-                                                        <thead className=" bg-blue-950 dark:bg-gray-900">
-                                                            <tr>
-                                                                <th className="">CODIGO</th>
-                                                                <th className="">NOME/RAZAO</th>
-                                                                <th className="">DOCUMENTO</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {cliente.map((item,index) => (
-                                                                <tr key={item.CODIGO}
-                                                                >
-                                                                    <td>{item.CODIGO}</td>
-                                                                    <td>{item.NOME}</td>
-                                                                    <td>{item.CNPJ?item.CNPJ:item.CPF}</td>
-                                                                </tr>    
+                                            <div className='divide-y divide-gray-500 text-center text-sm'>
+                                                <table className=''>
+                                                    <thead className="text-white bg-blue-950 dark:bg-gray-900">
+                                                        <tr>
+                                                            <th className="">CODIGO</th>
+                                                            <th className="">NOME/RAZAO</th>
+                                                            <th className="">DOCUMENTO</th>
+                                                           </tr>
+                                                    </thead>     
+                                                    <tbody>
+                                                        {cliente.map((item,index) => (
+                                                            <tr key={item.CODIGO}>
+                                                                <td>{item.CODIGO}</td>
+                                                                <td>{item.NOME}</td>
+                                                                <td>{item.CNPJ?item.CNPJ:item.CPF}</td>
+                                                            </tr>    
                                                             ))}
-                                                        </tbody>    
-                                                    </table>       
-                                                </div>
+                                                    </tbody>    
+                                                </table>       
                                             </div>    
                                         </div>
-                                        <nav className="flex justify-center items-center -space-x-px" aria-label="Pagination">
-                                            <button type="button" className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex 
-                                                                            justify-center items-center gap-x-1.5 text-sm first:rounded-s-lg 
-                                                                            last:rounded-e-lg border border-gray-200 text-gray-800 
-                                                                            hover:bg-gray-100 focus:outline-none focus:bg-gray-100 
-                                                                            disabled:opacity-50 disabled:pointer-events-none 
-                                                                            dark:border-neutral-700 dark:text-white 
-                                                                            dark:hover:bg-white/10 dark:focus:bg-white/10" 
-                                                onClick={() => setpaginaClienteBusca(prevPage => Math.max(prevPage - 1, 1))}>
-                                                <svg className="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" 
-                                                                width="24" height="24" viewBox="0 0 24 24" fill="none" 
-                                                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="m15 18-6-6 6-6"></path>
-                                                </svg>
-                                                <span className="sr-only">Anterior</span>
-                                            </button>
-                                            <button type="button" className="min-h-[38px] min-w-[38px] flex justify-center items-center bg-gray-200 text-gray-800 
-                                                                             border border-gray-200 py-2 px-3 text-sm first:rounded-s-lg last:rounded-e-lg focus:outline-none 
-                                                                             focus:bg-gray-300 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-600 
-                                                                             dark:border-neutral-700 dark:text-white dark:focus:bg-neutral-500" aria-current="page"
-                                                onClick={() => setpaginaClienteBusca(prevPage => prevPage)}>{paginaClienteBusca}</button>
-                                            <button type="button" className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-200 
-                                                                             text-gray-800 hover:bg-gray-100 py-2 px-3 text-sm first:rounded-s-lg last:rounded-e-lg 
-                                                                             focus:outline-none focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none 
-                                                                             dark:border-neutral-700 dark:text-white dark:hover:bg-white/10 dark:focus:bg-white/10"
-                                                onClick={() => setpaginaClienteBusca(prevPage => prevPage + 1)}>{paginaClienteBusca+1}</button>
-                                            <button type="button" className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-200 
-                                                                             text-gray-800 hover:bg-gray-100 py-2 px-3 text-sm first:rounded-s-lg last:rounded-e-lg 
-                                                                             focus:outline-none focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none 
-                                                                             dark:border-neutral-700 dark:text-white dark:hover:bg-white/10 dark:focus:bg-white/10"
-                                                onClick={() => setpaginaClienteBusca(prevPage => prevPage + 2)}>{paginaClienteBusca+2}</button>
-                                            <button type="button" className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex 
-                                                                            justify-center items-center gap-x-1.5 text-sm first:rounded-s-lg 
-                                                                            last:rounded-e-lg border border-gray-200 text-gray-800 
-                                                                            hover:bg-gray-100 focus:outline-none focus:bg-gray-100 
-                                                                            disabled:opacity-50 disabled:pointer-events-none 
-                                                                            dark:border-neutral-700 dark:text-white dark:hover:bg-white/10 
-                                                                            dark:focus:bg-white/10" aria-label="Next" 
-                                                onClick={() => setpaginaClienteBusca(prevPage => prevPage + 4)}>
-                                                <span className="sr-only">próximo</span>
-                                                <svg className="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="m9 18 6-6-6-6"></path>
-                                                </svg>
-                                            </button>
-                                        </nav>
                                     </div>
+                                    <nav className="flex justify-center items-center -space-x-px" aria-label="Pagination">
+                                        <button 
+                                            type="button" 
+                                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex 
+                                            justify-center items-center gap-x-1.5 text-sm first:rounded-s-lg 
+                                            last:rounded-e-lg border border-gray-200 text-gray-800 
+                                            hover:bg-gray-100 focus:outline-none focus:bg-gray-100 
+                                            disabled:opacity-50 disabled:pointer-events-none 
+                                            dark:border-neutral-700 dark:text-white 
+                                            dark:hover:bg-white/10 dark:focus:bg-white/10" 
+                                            onClick={handlePaginaAnterior}
+                                            aria-label="Previous"
+                                        >
+                                            <svg className="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="m15 18-6-6 6-6"></path>
+                                            </svg>
+                                            <span className="sr-only">Anterior</span>
+                                        </button>
+                                        {Array.from({ length: Math.min(limiteDePaginasNaNavegacaoDaBuscaCliente, quantidadeDePaginasNaNavegacaoDaBuscaCliente) }, (_, i) => {
+                                            const pageNumber = paginaInicialNaBuscaClientes + i;
+                                            const isActive = pageNumber === paginaAtualNaBuscaCliente; // Substitua 'paginaAtual' pelo nome da variável que representa a página atual
+                                            return (
+                                                <button 
+                                                    key={pageNumber} 
+                                                    type="button" 
+                                                    className={`min-h-[38px] min-w-[38px] flex justify-center items-center border text-gray-800 py-2 px-3 text-sm first:rounded-s-lg last:rounded-e-lg 
+                                                    focus:outline-none focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none 
+                                                    dark:border-neutral-700 dark:text-white dark:hover:bg-white/10 dark:focus:bg-white/10
+                                                    ${isActive ? 'bg-blue-300 border-gray-300' : 'border-gray-200 hover:bg-gray-100'}`} 
+                                                    onClick={() => handlePageNumberClick(pageNumber)}
+                                                >
+                                                    {pageNumber}
+                                                </button>
+                                            );
+                                        })}
+                                        <button 
+                                            type="button" 
+                                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex 
+                                            justify-center items-center gap-x-1.5 text-sm first:rounded-s-lg 
+                                            last:rounded-e-lg border border-gray-200 text-gray-800 
+                                            hover:bg-gray-100 focus:outline-none focus:bg-gray-100 
+                                            disabled:opacity-50 disabled:pointer-events-none 
+                                            dark:border-neutral-700 dark:text-white dark:hover:bg-white/10 
+                                            dark:focus:bg-white/10" 
+                                            aria-label="Next" 
+                                            onClick={handleProximaPagina}
+                                        >
+                                            <span className="sr-only">Próximo</span>
+                                            <svg className="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="m9 18 6-6-6-6"></path>
+                                            </svg>
+                                        </button>
+                                    </nav>
                                     <div className='flex justify-end p-2'>
                                         <button type="button" onClick={() => setAbreBuscaCliente(false)} className="bg-gray-300 text-black rounded px-4 py-1">Fechar</button>   
                                     </div>    

@@ -27,7 +27,17 @@ function Login(){
                 router.push("/home");
            }).catch((err)=>{
                 console.log(err);
-                setError(err.response.data.msg);
+                if (err.response) {
+
+                    setError(`Erro: ${err.response.status} - ${err.response.data.message || 'Erro desconhecido'}`);
+                } else if (err.request) {
+                    console.log(err.request);
+                    setError("Servidor Indisponível");
+                } else {
+
+                    setError(`Erro: ${err.message}`);
+                }
+                
            }) 
         }
     }
