@@ -27,17 +27,20 @@ export const getAgendaDeHoje = (req, res)=>{
 
             if(error){
                 return res.status(500).json({
+                    
                     msg:"O servidor esta indisponível no momento entre em contato com o suporte",
                 });
             }
             if(data.length===0){
 
                 return res.status(200).json({
+
                     msg:'NÃO EXISTEM REGISTROS PARA ESTA DATA',
                 });
             }else{
                 
                 return res.status(200).json({
+
                     agendahoje:data,
                 });
             }    
@@ -52,9 +55,13 @@ export const getClientes = (req,res) =>{
     const offset = (pagina - 1) * resultadoPorPagina;
 
     db.query(
+
         'SELECT COUNT(*) AS total FROM CLIENTES',(countError, countData)=>{
+
             if(countError){
+
                 return res.status(500).json({
+
                     msg:"O servidor esta indisponível no momento entre em contato com o suporte",
                 });
             }
@@ -62,24 +69,32 @@ export const getClientes = (req,res) =>{
             const totalClientes = countData[0].total;
 
             db.query(
+
                 `SELECT 
                     CODIGO, NOME, NOMEFANTASIA, CNPJ, CPF, DESATIVADO
                  FROM CLIENTES WHERE CLIENTES.DESATIVADO='false' LIMIT ? OFFSET ?`,
                 [resultadoPorPagina, offset],
                 (error, data) => {
+
                     if (error) {
+
                         return res.status(500).json({
+
                             msg: "O servidor está indisponível no momento. Entre em contato com o suporte.",
                         });
                     }
 
                     if (data.length === 0) {
+
                         return res.status(200).json({
+
                             msg: 'NÃO HÁ CLIENTES CADASTRADOS COM ESTES PARAMETROS',
                             total: totalClientes
                         });
                     } else {
+
                         return res.status(200).json({
+
                             clientes: data,
                             total: totalClientes
                         });
@@ -91,8 +106,11 @@ export const getClientes = (req,res) =>{
 
 export const getSituacaoAgenda = (req,res) =>{
     db.query(
+
         'SELECT * FROM SITUACAO_AGENDA',async(error, data)=>{
+
             if(error){
+
                 return res.status(500).json({
                     msg:"O servidor esta indisponível no momento entre em contato com o suporte",
                 });
@@ -113,8 +131,11 @@ export const getSituacaoAgenda = (req,res) =>{
 
 export const getTagAtendimentos = (req,res) =>{
     db.query(
+
         'SELECT * FROM TAG_ATENDIMENTO',async(error, data)=>{
+
             if(error){
+
                 return res.status(500).json({
                     msg:"O servidor esta indisponível no momento entre em contato com o suporte",
                 });
@@ -137,6 +158,7 @@ export const getVendedor = (req,res) =>{
     db.query(
         'SELECT * FROM VENDEDOR',async(error, data)=>{
             if(error){
+
                 return res.status(500).json({
                     msg:"O servidor esta indisponível no momento entre em contato com o suporte",
                 });
@@ -168,38 +190,47 @@ export const getAgendaFiltrada = (req, res) => {
     let params = [];
 
     if (CODCLI) {
+
         query += " AND (AGENDA.CLIENTE = ?)";
         params.push(CODCLI);
     }
     if (DATAINICIAL&& !DATAFINAL) {
+
         query += " AND (AGENDA.DATA_AGENDA= ?)";
         params.push(DATAINICIAL);
     }
     if (DATAINICIAL&&DATAFINAL) {
+
         query += " AND (AGENDA.DATA_AGENDA BETWEEN ? AND  ?)";
         params.push(DATAINICIAL,DATAFINAL);
     }
     if (SITUACAOAGENDA) {
+
         query += " AND (AGENDA.SITUACAO = ?)";
         params.push(SITUACAOAGENDA);
     }
-       query+="ORDER BY HORA_AGENDA"
+       query+="ORDER BY DATA_AGENDA,HORA_AGENDA"
     
     db.query(query, params, (error, data) => {
         if (error) {
+
             console.log(error);
             return res.status(500).json({
+
                 msg: "O servidor está indisponível no momento. Entre em contato com o suporte.",
             });
         }
         if (data.length === 0) {
+
             return res.status(200).json({
+
                 msg: 'NÃO HÁ REGISTROS PARA OS PARAMETROS FORNECIDOS',
                 agendafiltrada: [],
             });
         } else {
 
             return res.status(200).json({
+
                 agendafiltrada: data,
             });
         }
@@ -217,45 +248,49 @@ export const getClienteFiltrado = (req, res) => {
     let params = [];
 
     if (NOME_RAZAO) {
+
         let usandoLike = `%${NOME_RAZAO}%`;
         query += " (CLIENTES.NOME LIKE ? OR CLIENTES.NOMEFANTASIA LIKE ?)";
         params.push(usandoLike,usandoLike);
     }
     if (CNPJ_CPF) {
+
         if (CNPJ_CPF.length===18) {
+
             query += " CLIENTES.CNPJ = ?";
         } else if (CNPJ_CPF.length === 14) {
+
             query += " CLIENTES.CPF = ?";
         }
         params.push(CNPJ_CPF);
     }
     if(params){
+
         query+=" AND CLIENTES.DESATIVADO=?";
         params.push(ATIVO);
     }
 
 
     db.query(query, params, (error, data) => {
+
         if (error) {
-            
-            console.log('Params: '+params);
-            console.log('Query: '+query);
+
+            console.log(error);
             return res.status(500).json({
 
                 msg: "O servidor está indisponível no momento. Entre em contato com o suporte.",
-                
             });
         }
         if (data.length === 0) {
-            console.log('Params: '+params);
-            console.log('Query: '+query);
+
             return res.status(200).json({
+
                 msg: 'NÃO HÁ CLIENTES CADASTRADOS PARA OS PARAMETROS FORNECIDOS',
             });
         } else {
-            console.log('Params: '+params);
-            console.log('Query: '+query);
+
             return res.status(200).json({
+
                 clientes: data,
             });
         }

@@ -61,7 +61,7 @@ function Agenda() {
     const [quantidadeDeClientesNaPaginaBuscaCliente, setQuantidadeDeClientesNaPaginaBuscaCliente] = useState(10);
     const [totalClientes, setTotalClientes] = useState(0);
     const [limiteDePaginasNaNavegacaoDaBuscaCliente, setLimiteDePaginasNaNavegacaoDaBuscaCliente] = useState(1);
-    const [clienteSelecionado, setClienteSelecionado] = useState(null);
+    const [clienteSelecionado, setClienteSelecionado] = useState<ClienteItem | null>(null);
     const [situacaoAgenda, setSituacaoAgenda] = useState<SiatuacaoAgendaItem[]>([]);
     const [tagAtendimento, setTagAtendimento] = useState<TagAtendimentoItem[] | null>(null);
     const [vendedor, setVendedor] = useState<VendedorItem[]>([]);
@@ -152,11 +152,13 @@ function Agenda() {
     };
     const handleBuscaCliente = () => {
 
-        setAbreBuscaCliente(false);
+        setMensagemServidor('');
+        setAbreBuscaCliente(!abreBuscaCliente);
     };
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setDocumento(e.target.value);
         setFiltroDocumento(e.target.value);
+
     };
     const handleDetalhes = () => {
 
@@ -168,6 +170,7 @@ function Agenda() {
     };
 
     const handleDeleta = () => {
+
         if (selecionaCodigo) {
 
             setDeletaAgenda(false);
@@ -181,18 +184,24 @@ function Agenda() {
         setPaginaAtualNaBuscaCliente(prevPage => Math.min(prevPage + quantidadeDePaginasNaNavegacaoDaBuscaCliente, limiteDePaginasNaNavegacaoDaBuscaCliente));
     };
 
-    const handlePageNumberClick = (pageNumber) => {
+    const handlePageNumberClick = (pageNumber: number) => {
         setPaginaAtualNaBuscaCliente(pageNumber);
     };
-    const handleClienteSelecionado = (cliente) => {
+    const handleClienteSelecionado = (cliente: ClienteItem) => {
         setClienteSelecionado(cliente);
-        setAbreBuscaCliente(false);
+        handleBuscaCliente();
+
+        const codCliAgendaInput = document.getElementById('filtroCodCliAgenda') as HTMLInputElement;
+        const inputCodClienteAG = document.getElementById('inputCodClienteAG') as HTMLInputElement;
+        const inputNomeClienteAG = document.getElementById('inputNomeClienteAG') as HTMLInputElement;
+
 
         if (isFiltroVisible) {
-            document.getElementById('filtroCodCliAgenda').value = cliente.CODIGO;
+            codCliAgendaInput.value = cliente.CODIGO.toString();
+            setFiltroCodCliAgenda(cliente.CODIGO.toString());
         } else {
-            document.getElementById('inputCodClienteAG').value = cliente.CODIGO;
-            document.getElementById('inputNomeClienteAG').value = cliente.NOME;
+            inputCodClienteAG.value = cliente.CODIGO.toString();
+            inputNomeClienteAG.value = cliente.NOME;
         }
     };
 
@@ -213,13 +222,15 @@ function Agenda() {
 
                 setMensagemServidor(response.data.msg);
             }
+            setFiltroCodCliAgenda('');
+            setFiltroNomeRazao('');
             setAgenda(response.data.agendafiltrada);
         } catch (error) {
             console.error("Erro ao buscar cliente:", error);
         }
     };
 
-    const handleAtivo = (checked) =>{
+    const handleAtivo = (checked: boolean) =>{
 
         setClientesAtivos(checked);
     }
@@ -293,7 +304,7 @@ function Agenda() {
                                         onChange={(e) => setFiltroSituacaoAgenda(e.target.value)} />
                                 </div>
                                 <div className='w-full md:max-w-max'>
-                                    <p className='dark:text-white'>Cod. CLiente</p>
+                                    <p className='dark:text-white'>Cod. Cliente</p>
                                     <div className='flex w-full md:max-w-max'>
                                         <div className="w-[85%] md:w-[50%] m-0">
                                             <input type="text" id="filtroCodCliAgenda" name="filtroCodCliAgenda" placeholder="99999"
@@ -305,7 +316,7 @@ function Agenda() {
                                             <button type="button" id="btBuscaCliente" name="btBuscaCliente"
                                                 className=' border border-gray-300 shadow-sm border-transparent 
                                                                     bg-blue-600 focus:ring-2 focus:ring-blue-500 rounded-e p-1'
-                                                onClick={() => setAbreBuscaCliente(true)}>
+                                                onClick={handleBuscaCliente}>
                                                 Buscar</button>
                                         </div>
                                     </div>
@@ -359,7 +370,42 @@ function Agenda() {
                                     ))}
                                 </tbody>
                             </table>
-                            {abreNovaAgenda && (
+                        </div>    
+                    ) : (
+                        <>
+                            <table className="min-w-full divide-y divide-gray-500 text-center text-xs">
+                            <thead className="bg-blue-950 dark:bg-gray-900 sticky top-0 z-10">
+                                <tr>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">CODIGO</th>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">CONTATO</th>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">ASSUNTO</th>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">TIPO</th>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">TELEFONE</th>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">DATA AGENDADA</th>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">HORA AGENDADA</th>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">RESPONSÁVEL</th>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">OPERADOR</th>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">SITUAÇÃO</th>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">OPÇÕES</th>
+                                </tr>
+                            </thead>
+                            <tbody className="dark:text-gray-100">
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td colSpan={2}>{mensagemServidor ?(<p>{mensagemServidor}</p>):(<p>Não há registros para os parâmetros informados</p>)}</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td> 
+                            </tbody>    
+                        </table>
+                    </>
+                    )}
+                        {abreNovaAgenda && (
                                 <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-2">
                                     <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-lg h-screen overflow-auto scrollbar-custom 
                                                             md:h-auto md:overflow-visible md:scrollbar-none md:w-[80%]">
@@ -386,7 +432,7 @@ function Agenda() {
                                                                             gap-x-2 text-sm font-semibold rounded-e-md border border-transparent 
                                                                             bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 
                                                                             focus:ring-blue-500"
-                                                        id="btBuscaAgenda" onClick={() => setAbreBuscaCliente(true)}>
+                                                        id="btBuscaAgenda" onClick={handleBuscaCliente}>
                                                         Busca</button>
                                                 </div>
                                             </div>
@@ -590,7 +636,7 @@ function Agenda() {
                                     <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg w-full max-w-2xl divide-y divide-black dark:divide-gray-100">
                                         <div className='flex justify-between text-blue-700 mb-4'>
                                             <h1 className="text-lg font-bold">Selecionar ou Buscar</h1>
-                                            <button type="button" onClick={() => setAbreBuscaCliente(false)} className="text-black dark:text-gray-100"><MdOutlineClose /></button>
+                                            <button type="button" onClick={handleBuscaCliente} className="text-black dark:text-gray-100"><MdOutlineClose /></button>
                                         </div>
                                         <div className='w-full mb-4'>
                                             <div className='flex-wrap mb-4'>
@@ -700,7 +746,7 @@ function Agenda() {
                                             </button>
                                         </nav>
                                         <div className='flex justify-end p-2'>
-                                            <button type="button" onClick={() => setAbreBuscaCliente(false)} className="bg-gray-300 text-black rounded px-4 py-1">Fechar</button>
+                                            <button type="button" onClick={handleBuscaCliente} className="bg-gray-300 text-black rounded px-4 py-1">Fechar</button>
                                         </div>
                                     </div>
                                 </div>
@@ -773,41 +819,7 @@ function Agenda() {
                                     </div>
                                 </div>
                             )}
-                        </div>
-                    ) : (
-                        <>
-                            <table className="min-w-full divide-y divide-gray-500 text-center text-xs">
-                            <thead className="bg-blue-950 dark:bg-gray-900 sticky top-0 z-10">
-                                <tr>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">CODIGO</th>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">CONTATO</th>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">ASSUNTO</th>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">TIPO</th>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">TELEFONE</th>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">DATA AGENDADA</th>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">HORA AGENDADA</th>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">RESPONSÁVEL</th>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">OPERADOR</th>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">SITUAÇÃO</th>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">OPÇÕES</th>
-                                </tr>
-                            </thead>
-                            <tbody className="dark:text-gray-100">
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td>Não há registros para os parâmetros fornecidos.</td>
-                                <td><p>{mensagemServidor}</p></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td> 
-                            </tbody>    
-                        </table>
-                    </>
-                    )}
+                           
                 </>
             )}
         </div>
