@@ -254,6 +254,14 @@ function Agenda() {
             console.error("Erro ao buscar cliente:", error);
         }
     };
+    const removeTags = (text:string) => {
+        return text.split('\n').map((item, key) => (
+            <span key={key}>
+                {item}
+                <br />
+            </span>
+        ));
+    };
 
     return (
         <div className="flex flex-col h-screen">
@@ -753,13 +761,13 @@ function Agenda() {
                             )}
                             {mostraDetalhes && selecionaCodigo && (
                                 <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-                                    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg w-full max-w-md divide-y divide-black dark:divide-gray-100">
+                                    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg max-w-lg divide-y divide-black dark:divide-gray-100">
                                         <div className='flex justify-between text-blue-700 mb-4'>
                                             <h1 className="text-lg font-bold">Detalhes da Agenda</h1>
                                             <button type="button" onClick={() => setMostraDetalhes(false)} className="text-black dark:text-gray-100"><MdOutlineClose /></button>
                                         </div>
                                         <div className='mb-2'>
-                                            <dl className="grid grid-cols-2 p-2">
+                                            <dl className="grid grid-cols-3 p-1">
                                                 <dt className="col-start-1"><strong>Código do Cliente:</strong></dt>
                                                 <dd className="col-start-2"><span id="RegistroCodCli">{selecionaCodigo.CLIENTE}</span></dd>
                                                 <dt className="col-start-1"><strong>Nome/Razão:</strong></dt>
@@ -770,7 +778,7 @@ function Agenda() {
                                                 <dt className="col-start-1"><strong>Atendimento Nº:</strong></dt>
                                                 <dd className="col-start-2"><span id="codigoRegistro">{selecionaCodigo.CODIGO}</span></dd>
                                                 <dt className="col-start-1"><strong>Detalhes:</strong></dt>
-                                                <dd className="col-start-2"><span id="detalhesRegistro"></span>{selecionaCodigo.HISTORICO}</dd><br></br>
+                                                <dd className="col-start-2 col-span-2 max-h-40 md:max-h-60 overflow-y-auto scrollbar-custom"><span id="detalhesRegistro"  dangerouslySetInnerHTML={{ __html: selecionaCodigo.HISTORICO }}></span></dd><br></br>
                                             </dl>
                                         </div>
                                         <div className='flex justify-end p-2'>
