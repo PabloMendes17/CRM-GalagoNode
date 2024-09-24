@@ -1,4 +1,5 @@
 import {db} from "../connect.js";
+import { updateAgenda } from "../index.js";
 
 export const getAgendaDeHoje = (req, res)=>{
 
@@ -296,3 +297,118 @@ export const getClienteFiltrado = (req, res) => {
         }
     });
 };
+
+export const postNovaAgenda =(req,res)=>{
+
+    const { 
+        contatoAG,
+        operadorAG,
+        assuntoAG,
+        codCli,
+        DATA_GRAVACAOAG,
+        DATA_AGENDAAG,
+        HORA_AGENDAAG,
+        situacaoAgenda,
+        tipoAG,
+        HISTORICOAG,
+        TELEFONE1,
+        responsavelAG,
+    } = req.body;
+
+    const historicoFormatado = HISTORICOAG.replace(/\n/g, '<br>');
+
+    const query = `INSERT INTO AGENDA ( 
+                                       CONTATO,
+                                       OPERADOR,
+                                       ASSUNTO,
+                                       CLIENTE,
+                                       DATA_GRAVACAO,
+                                       DATA_AGENDA,
+                                       HORA_AGENDA,
+                                       SITUACAO,
+                                       TIPO,
+                                       HISTORICO,
+                                       TELEFONE1,
+                                       RESPONSAVEL
+                                       )
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    const params = [
+                    contatoAG,
+                    operadorAG,
+                    assuntoAG,
+                    codCli,
+                    DATA_GRAVACAOAG,
+                    DATA_AGENDAAG,
+                    HORA_AGENDAAG,
+                    situacaoAgenda,
+                    tipoAG,
+                    historicoFormatado,
+                    TELEFONE1,
+                    responsavelAG,];
+
+    db.query(query, params, (error, result) => {
+        if (error) {
+            console.error(error);
+            return res.status(500).json({
+                msg: "Erro ao criar a agenda. Tente novamente.",
+            });
+        }
+        console.error(query);
+        console.error(params);
+        updateAgenda();
+        return res.status(201).json({
+            msg: "Agenda gravada com sucesso!",
+            agendaId: result.insertId,
+        });
+    });
+
+};
+
+export const postAtualizaAgenda = (req,res)=>{
+
+    const { 
+        codigoAtendimentoAG,
+        contatoAtualizaAG,
+        assuntoAtualizaAG,
+        responsaveAtualizalAG,
+        situacaoAtualizaAgenda,
+        atualizaTELEFONE1,
+        atualizaHISTORICOAG,
+    } = req.body;
+
+    const historicoFormatado = atualizaHISTORICOAG.replace(/\n/g, '<br>');
+
+    const query = `UPDATE AGENDA SET 
+                    CONTATO = ?, 
+                    ASSUNTO = ?, 
+                    RESPONSAVEL = ?,
+                    SITUACAO = ?, 
+                    TELEFONE1 = ?, 
+                    HISTORICO = ?  
+                WHERE CODIGO = ?`;
+    const params = [
+                contatoAtualizaAG,
+                assuntoAtualizaAG,
+                responsaveAtualizalAG,
+                situacaoAtualizaAgenda,
+                atualizaTELEFONE1,
+                historicoFormatado,
+                codigoAtendimentoAG,];     
+
+           
+    db.query(query, params, (error, result) => {
+        if (error) {
+
+            console.error(error);
+            return res.status(500).json({
+                msg: "Erro ao atualizar os dados. Tente novamente.",
+            });
+        }
+        updateAgenda();
+        return res.status(201).json({
+
+            msg: "Agenda Atualizada com sucesso!",
+        });
+    });    
+}; 

@@ -4,8 +4,11 @@ import agendamentosRouter from "./routes/agendamentos.js";
 import authRouter from "./routes/auth.js";
 import bodyParser from "body-parser";
 import cors from "cors";
-
+import { WebSocketServer } from "ws";
+ 
 const app = express();
+const PORT = 8001;
+
 app.use(express.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cors());
@@ -18,6 +21,35 @@ app.use("/api/agendamentos/",agendamentosRouter);
 
 
 
-app.listen(8001,()=>{
-    console.log("Servidor Rodando");
+const server = app.listen(PORT, () => {
+    console.log("Servidor Rodando na porta " + PORT);
 });
+
+const wss = new WebSocketServer({ server });
+
+wss.on("connection", (ws) => {
+    console.log("Novo cliente conectado");
+    ws.send(JSON.stringify({ message: "Bem-vindo ao CrmGalago WebSocket!" }));
+
+    ws.on("message", (message) => {
+        console.log(`Recebido: ${message}`);
+    });
+
+    ws.on("close", () => {
+        console.log("Cliente desconectado");
+    });
+});
+
+const broadcast = (data) => {
+    wss.clients.forEach((client) => {
+        if (client.readyState === client.OPEN) {
+            client.send(data);
+        }
+    });
+};
+
+export const updateAgenda = () => {
+    const message = JSON.stringify({ event: "update", data: "Agenda atualizada!" });
+    broadcast(message);
+};
+
