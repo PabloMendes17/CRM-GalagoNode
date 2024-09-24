@@ -34,9 +34,9 @@ function Header(){
     const imgUserSrc = isDarkMode ? "/imagens/ImgUserDark.png" : "/imagens/ImgUserLight.png";
 
     return(
-        <header className="fixed top-0 left-0 right-0 py-1 w-full py-1 flex bg-white dark:bg-slate-800 justify-between items-center shadow-md">
+        <header className="fixed top-0 z-30 left-0 right-0 py-1 w-full py-1 flex bg-white dark:bg-slate-800 justify-between items-center shadow-md">
             <div className="">
-                <img className="h-16" src={logoSrc} alt="Logo Gálago"/>
+                <img className="h-12 m-1" src={logoSrc} alt="Logo Gálago"/>
             </div>
             <div className="flex items-center">
                 <div className="flex flex-col items-center justify-center self-end px-2">

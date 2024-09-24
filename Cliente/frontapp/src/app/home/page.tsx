@@ -18,7 +18,18 @@ export default function Home() {
     if(!credenciais){
         router.push("/login")  
     } 
-}, []);
+
+    const requestNotificationPermission = async () => {
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        console.log("Permissão para notificações concedida!");
+      } else {
+        console.log("Permissão para notificações não concedida.");
+      }
+    };
+    requestNotificationPermission();
+
+}, [router]);
 
   return (
     <main className="min-h-screen flex-col items-center bg-zinc-100">

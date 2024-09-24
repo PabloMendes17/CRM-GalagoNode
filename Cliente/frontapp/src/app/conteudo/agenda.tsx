@@ -7,7 +7,10 @@ import { MdEdit, MdDeleteForever, MdOutlineClose } from "react-icons/md";
 import { useState, useEffect } from "react";
 import InputDocumento from '../components/InputDocumento';
 import CheckboxComponente from '../components/CheckboxComponente';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { makeRequest } from "../../../axios";
+import { BiBody } from 'react-icons/bi';
 
 
 interface AgendaItem {
@@ -84,6 +87,26 @@ function Agenda() {
     const [alteraAgenda, setAlteraAgenda] = useState<boolean>(false);
     const [deletaAgenda, setDeletaAgenda] = useState<boolean>(false);
 
+    const [errorsForm, setErrorsForm] = useState({
+        codCli: false,
+        nomeCli: false,
+        responsavelAG: false,
+        situacaoAgenda: false,
+        tipoAG: false,
+    });
+
+    const [errorsFormUp, setErrorsFormUp] = useState({
+
+        codigoAtendimentoAG:false,
+        contatoAtualizaAG: false,
+        assuntoAtualizaAG: false,
+        responsaveAtualizalAG: false,
+        situacaoAtualizaAgenda: false,
+        atualizaTELEFONE1: false,
+        atualizaHISTORICOAG: false,
+        
+    });
+    
     const quantidadeDePaginasNaNavegacaoDaBuscaCliente = 3
     const paginaInicialNaBuscaClientes = Math.max(1, Math.min(paginaAtualNaBuscaCliente - Math.floor(quantidadeDePaginasNaNavegacaoDaBuscaCliente / 2),
         limiteDePaginasNaNavegacaoDaBuscaCliente - quantidadeDePaginasNaNavegacaoDaBuscaCliente + 1));
@@ -113,6 +136,7 @@ function Agenda() {
                 console.error("Erro ao buscar dados:", error);
             }
         };
+        
 
         if (totalClientes > 10) {
 
@@ -130,6 +154,37 @@ function Agenda() {
 
         fetchData();
     }, [paginaAtualNaBuscaCliente, quantidadeDeClientesNaPaginaBuscaCliente, totalClientes]);
+    useEffect(() => {
+        const ws = new WebSocket('ws://localhost:8001');
+
+        ws.onopen = () => {
+            console.log('Conectado ao servidor WebSocket');
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            if (data.event === "update") {
+                
+                if (filtroCodCliAgenda || filtroDtInicial || filtroDtFinal || filtroSituacaoAgenda) {
+
+                    handleFiltrarAgenda();
+                    notificacaoUsuario("Atualização da Agenda", "A agenda foi atualizada com sucesso!");
+                } else {
+
+                    notificacaoUsuario("Atualização da Agenda", "A agenda foi atualizada com sucesso!");
+                    atualizarAgendahoje();
+                }
+            } 
+        }           
+        ws.onclose = () => {
+            console.log('Conexão fechada');
+        };
+
+        return () => {
+            ws.close(); 
+        };
+    }, []);
 
 
     function formatDateToBR(dateString: string): string {
@@ -141,14 +196,87 @@ function Agenda() {
         };
         return date.toLocaleDateString('pt-BR', options);
     }
-    const handleFechaNovaAgenda = () => {
 
-        setAbreNovaAgenda(false);
-    };
     const handleAbreNovaAgenda = () => {
 
-        setAbreNovaAgenda(true);
+        setAbreNovaAgenda(!abreNovaAgenda);
         setIsFiltroVisible(false);
+    };
+    const handleSubmitAgenda = async (event:any) => {
+        event.preventDefault();
+
+        const codCli = document.getElementById('inputCodClienteAG') as HTMLInputElement;
+        const nomeCli = document.getElementById('inputNomeClienteAG') as HTMLInputElement;
+        const responsavelAG = document.getElementById('responsavelAG') as HTMLInputElement;
+        const operadorAG = document.getElementById('operadorAG') as HTMLInputElement;
+        const contatoAG = document.getElementById('contatoAG') as HTMLInputElement;
+        const assuntoAG =document.getElementById('assuntoAG') as HTMLInputElement;
+        const DATA_GRAVACAOAG = document.getElementById('DATA_GRAVACAOAG') as HTMLInputElement;
+        const DATA_AGENDAAG = document.getElementById('DATA_AGENDAAG') as HTMLInputElement;
+        const HORA_AGENDAAG = document.getElementById('HORA_AGENDAAG') as HTMLInputElement;
+        const situacaoAgenda = document.getElementById('situacaoAgenda') as HTMLInputElement;
+        const tipoAG = document.getElementById('tipoAG') as HTMLInputElement;
+        const TELEFONE1 = document.getElementById('TELEFONE1') as HTMLInputElement;
+        const HISTORICOAG = document.getElementById('HISTORICOAG') as HTMLInputElement;
+
+        let validacaoErrorsForm = {
+            codCli: !codCli.value,
+            nomeCli: !nomeCli.value,
+            responsavelAG: responsavelAG.value === 'Selecione',
+            situacaoAgenda: situacaoAgenda.value === 'Selecione',
+            tipoAG: tipoAG.value === 'Selecione',
+        };
+
+        setErrorsForm(validacaoErrorsForm);
+
+        if (Object.values(validacaoErrorsForm).some(error => error)) {
+            toast.error('Por favor, preencha todos os campos obrigatórios.');
+            return;
+        }
+        try {
+            const response = await makeRequest.post('agendamentos/novaagenda', { 
+                contatoAG: contatoAG.value,
+                operadorAG: operadorAG.value,
+                assuntoAG: assuntoAG.value,
+                codCli: codCli.value,
+                DATA_GRAVACAOAG: DATA_GRAVACAOAG.value,
+                DATA_AGENDAAG: DATA_AGENDAAG.value,
+                HORA_AGENDAAG: HORA_AGENDAAG.value,
+                situacaoAgenda: situacaoAgenda.value,
+                tipoAG: tipoAG.value,
+                HISTORICOAG: HISTORICOAG.value,
+                TELEFONE1: TELEFONE1.value,
+                responsavelAG: responsavelAG.value,
+            });
+    
+            if (response.status === 200 || response.status === 201) {
+
+                toast.success(response.data.msg);
+                setAbreNovaAgenda(!abreNovaAgenda);
+            } else {
+
+                throw new Error(response.data.msg || 'Erro ao enviar os dados.');
+            }
+
+        } catch (error:any) {
+            console.log(error);
+            toast.error('Erro ao enviar os dados: ' + error.response.data.msg);
+        }
+
+    };
+    const handleErrorsForm = (field:any) => {
+        setErrorsForm((prevErrors) => ({
+            ...prevErrors,
+            [field]: false,
+        }));
+    };
+    const atualizarAgendahoje = async () => {
+        try {
+            const agendaRes = await makeRequest.get("agendamentos/agendahoje");
+            setAgenda(agendaRes.data.agendahoje || []);
+        } catch (error) {
+            console.error("Erro ao buscar agenda:", error);
+        }
     };
     const handleBuscaCliente = () => {
 
@@ -164,9 +292,63 @@ function Agenda() {
 
         setMostraDetalhes(false);
     };
-    const handleAtualiza = () => {
+    const handleAtualizaAgenda = () => {
 
-        setAlteraAgenda(false);
+        setAlteraAgenda(!alteraAgenda);
+    };
+    const handleSubmitAtualizaAgenda = async (event:any) =>{
+        event.preventDefault();
+
+        const codigoAtendimentoAG = document.getElementById('codigoAtendimentoAG') as HTMLInputElement;
+        const contatoAtualizaAG = document.getElementById('contatoAtualizaAG') as HTMLInputElement;
+        const assuntoAtualizaAG = document.getElementById('assuntoAtualizaAG') as HTMLInputElement;
+        const responsaveAtualizalAG = document.getElementById('responsaveAtualizalAG') as HTMLInputElement;
+        const situacaoAtualizaAgenda = document.getElementById('situacaoAtualizaAgenda') as HTMLInputElement;
+        const atualizaTELEFONE1 = document.getElementById('atualizaTELEFONE1') as HTMLInputElement;
+        const atualizaHISTORICOAG = document.getElementById('atualizaHISTORICOAG') as HTMLInputElement;
+
+        let validacaoErrorsForm = {
+            codigoAtendimentoAG: !codigoAtendimentoAG.value,
+            contatoAtualizaAG: !contatoAtualizaAG.value,
+            assuntoAtualizaAG: !assuntoAtualizaAG.value,
+            responsaveAtualizalAG: responsaveAtualizalAG.value === 'Selecione',
+            situacaoAtualizaAgenda: situacaoAtualizaAgenda.value === 'Selecione',
+            atualizaTELEFONE1: !atualizaTELEFONE1.value,
+            atualizaHISTORICOAG: !atualizaHISTORICOAG.value,
+        };
+
+        setErrorsFormUp(validacaoErrorsForm);
+
+        if (Object.values(validacaoErrorsForm).some(error => error)) {
+            toast.error('Por favor, preencha todos os campos obrigatórios.');
+            return;
+        }
+
+        try {
+            const response = await makeRequest.post('agendamentos/atualizaagenda', { 
+                
+                codigoAtendimentoAG: codigoAtendimentoAG.value,
+                contatoAtualizaAG: contatoAtualizaAG.value,
+                assuntoAtualizaAG: assuntoAtualizaAG.value,
+                responsaveAtualizalAG: responsaveAtualizalAG.value,
+                situacaoAtualizaAgenda: situacaoAtualizaAgenda.value,
+                atualizaTELEFONE1: atualizaTELEFONE1.value,
+                atualizaHISTORICOAG: atualizaHISTORICOAG.value,
+            });
+    
+            if (response.status === 200 || response.status === 201) {
+
+                toast.success(response.data.msg);
+                setAlteraAgenda(!alteraAgenda);
+            } else {
+
+                throw new Error(response.data.msg || 'Erro ao enviar os dados.');
+            }
+
+        } catch (error:any) {
+            console.log(error);
+            toast.error('Erro ao enviar os dados: ' + error.response.data.msg);
+        }
     };
 
     const handleDeleta = () => {
@@ -174,6 +356,14 @@ function Agenda() {
         if (selecionaCodigo) {
 
             setDeletaAgenda(false);
+        }
+    };
+    const notificacaoUsuario = (titulo:string, mensagem:string) => {
+        if (Notification.permission === "granted") {
+            new Notification(titulo, {
+                body: mensagem,
+                icon: '/favicon.ico' 
+            });
         }
     };
     const handlePaginaAnterior = () => {
@@ -420,16 +610,24 @@ function Agenda() {
                                         <div className='flex justify-between text-blue-700 mb-4'>
                                             <h2 className="text-lg text-blue-700 font-bold">Nova Agenda</h2>
                                         </div>
-                                        <form onSubmit={handleFechaNovaAgenda} className="md:grid md:grid-cols-12 items-center">
+                                        <form onSubmit={handleSubmitAgenda} className="md:grid md:grid-cols-12 items-center">
                                             <div className="col-span-2 m-1">
                                                 <div className="relative flex w-full rounded-lg shadow-sm">
                                                     <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
                                                                             text-sm disabled:pointer-events-none">
                                                         <input type="number" id="inputCodClienteAG" name="inputCodClienteAG"
-                                                            className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
-                                                                                rounded-l-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                                                                dark:bg-slate-800"
-                                                            defaultValue='999999' required />
+                                                            className={`w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                                rounded-l-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                                dark:bg-slate-800 ${errorsForm.codCli ? 'border-red-500' : ''}`}                    
+                                                            defaultValue='999999' 
+                                                            onFocus={() => handleErrorsForm('codCli')}
+                                                            style={{ 
+                                                                appearance: 'textfield', 
+                                                                MozAppearance: 'textfield', 
+                                                                WebkitAppearance: 'none', 
+                                                                margin: 0, 
+                                                            }}
+                                                            required disabled/>
                                                         <label htmlFor="inputCodClienteAG"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Cod Cliente
@@ -448,10 +646,12 @@ function Agenda() {
                                                 <div className="relative flex w-full rounded-lg shadow-sm">
                                                     <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
                                                                             text-sm disabled:pointer-events-none">
-                                                        <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                        <input type="text" className={`w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                             rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                                                                            dark:bg-slate-800"
-                                                            id="inputNomeClienteAG" name="inputNomeClienteAG" placeholder="Nome/Razão Social" defaultValue='Ainda Não Cadastrado' disabled />
+                                                                                            dark:bg-slate-800 ${errorsForm.nomeCli ? 'border-red-500' : ''}`}
+                                                            id="inputNomeClienteAG" name="inputNomeClienteAG" placeholder="Nome/Razão Social" defaultValue='Ainda Não Cadastrado' 
+                                                            onFocus={() => handleErrorsForm('nomeCli')}
+                                                            disabled />
                                                         <label htmlFor="inputNomeClienteAG"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Nome/Razão Social</label>
@@ -462,17 +662,19 @@ function Agenda() {
                                                 <div className="relative flex w-full rounded-lg shadow-sm">
                                                     <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
                                                                             text-sm disabled:pointer-events-none">
-                                                        <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                        <select className={`w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                                                                dark:bg-slate-800"
-                                                            aria-label="Default select example" id="Responsavel" name="Responsavel" required>
+                                                                                dark:bg-slate-800 ${errorsForm.responsavelAG ? 'border-red-500' : ''} `}
+                                                            aria-label="Default select example" id="responsavelAG" name="responsavelAG" 
+                                                            onFocus={() => handleErrorsForm('responsavelAG')}
+                                                            required>
                                                             <option selected disabled>Selecione</option>
                                                             {vendedor.map((item, index) => (
                                                                 <option key={item.CODIGO} value={item.usuario_PARAMetro}>{item.usuario_PARAMetro}</option>
                                                             ))}
 
                                                         </select>
-                                                        <label htmlFor="Responsavel"
+                                                        <label htmlFor="responsavelAG"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Responsável</label>
                                                     </div>
@@ -485,10 +687,10 @@ function Agenda() {
                                                         <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
                                                                                 dark:bg-slate-800"
-                                                            aria-label="Default select example" id="Operador" name="OPERADOR" required disabled>
+                                                            aria-label="Default select example" id="operadorAG" name="operadorAG" required disabled>
                                                             <option selected value={usuarioLogado.usuario_PARAMetro}>{usuarioLogado.usuario_PARAMetro}</option>
                                                         </select>
-                                                        <label htmlFor="Operador"
+                                                        <label htmlFor="operadorAG"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Angedado Por:</label>
                                                     </div>
@@ -501,8 +703,8 @@ function Agenda() {
                                                         <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                             rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
                                                                                             dark:bg-slate-800"
-                                                            id="floatingContato" name="CONTATO" required />
-                                                        <label htmlFor="floatingContato"
+                                                            id="contatoAG" name="contatoAG" required />
+                                                        <label htmlFor="contatoAG"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Contato</label>
                                                     </div>
@@ -515,8 +717,8 @@ function Agenda() {
                                                         <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                             rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
                                                                                             dark:bg-slate-800"
-                                                            id="floatingAssunto" name="ASSUNTO" required />
-                                                        <label htmlFor="floatingAssunto"
+                                                            id="assuntoAG" name="assuntoAG" required />
+                                                        <label htmlFor="assuntoAG"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Assunto</label>
                                                     </div>
@@ -529,8 +731,11 @@ function Agenda() {
                                                         <input type="date" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                             rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
                                                                                             dark:bg-slate-800"
-                                                            id="floatingDtRegistro" name="DATA_GRAVACAO" required />
-                                                        <label htmlFor="floatingDtRegistro"
+                                                            id="DATA_GRAVACAOAG" name="DATA_GRAVACAOAG" 
+                                                            min={`${new Date().getFullYear() - 10}-01-01`} 
+                                                            max={`${new Date().getFullYear() + 10}-12-31`}
+                                                            required />
+                                                        <label htmlFor="DATA_GRAVACAOAG"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Data Registro</label>
                                                     </div>
@@ -543,8 +748,11 @@ function Agenda() {
                                                         <input type="date" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                             rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
                                                                                             dark:bg-slate-800"
-                                                            id="floatingDtAgenda" name="DATA_AGENDA" required />
-                                                        <label htmlFor="floatingDtAgenda"
+                                                            id="DATA_AGENDAAG" name="DATA_AGENDAAG" 
+                                                            min={`${new Date().getFullYear() - 10}-01-01`} 
+                                                            max={`${new Date().getFullYear() + 10}-12-31`}
+                                                            required />
+                                                        <label htmlFor="DATA_AGENDAAG"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Data Agenda</label>
                                                     </div>
@@ -557,8 +765,8 @@ function Agenda() {
                                                         <input type="time" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                             rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
                                                                                             dark:bg-slate-800"
-                                                            id="floatingHrAgenda" name="HORA_AGENDA" required />
-                                                        <label htmlFor="floatingHrAgenda"
+                                                            id="HORA_AGENDAAG" name="HORA_AGENDAAG" required />
+                                                        <label htmlFor="HORA_AGENDAAG"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Hora Agenda</label>
                                                     </div>
@@ -568,16 +776,18 @@ function Agenda() {
                                                 <div className="relative flex w-full rounded-lg shadow-sm">
                                                     <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
                                                                             text-sm disabled:pointer-events-none">
-                                                        <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                        <select className={`w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
-                                                                                dark:bg-slate-800"
-                                                            id="floatingSituacao" name="SITUACAO" required>
+                                                                                dark:bg-slate-800 ${errorsForm.situacaoAgenda ? 'border-red-500' : ''}`}
+                                                            id="situacaoAgenda" name="situacaoAgenda" 
+                                                            onFocus={() => handleErrorsForm('situacaoAgenda')}
+                                                            required>
                                                             <option selected disabled>Selecione</option>
                                                             {situacaoAgenda.map((item, index) => (
                                                                 <option key={item.CODIGO} value={item.DESCRICAO}>{item.DESCRICAO}</option>
                                                             ))}
                                                         </select>
-                                                        <label htmlFor="floatingSituacao"
+                                                        <label htmlFor="situacaoAgenda"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Situacao</label>
                                                     </div>
@@ -587,10 +797,12 @@ function Agenda() {
                                                 <div className="relative flex w-full rounded-lg shadow-sm">
                                                     <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
                                                                             text-sm disabled:pointer-events-none">
-                                                        <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                        <select className={`w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
-                                                                                dark:bg-slate-800"
-                                                            id="Tipo" name="TIPO" required>
+                                                                                dark:bg-slate-800 ${errorsForm.tipoAG ? 'border-red-500' : ''}`}
+                                                            id="tipoAG" name="tipoAG" 
+                                                            onFocus={() => handleErrorsForm('tipoAG')}
+                                                            required>
                                                             <option selected disabled>Selecione</option>
                                                             <option value="AGENDAMENTO 1H">AGENDAMENTO 1H</option>
                                                             <option value="AGENDAMENTO 1H:30m">AGENDAMENTO 1H:30m</option>
@@ -609,8 +821,8 @@ function Agenda() {
                                                         <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                             rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
                                                                                             dark:bg-slate-800"
-                                                            id="Telefone" name="TELEFONE1" required />
-                                                        <label htmlFor="Telefone"
+                                                            id="TELEFONE1" name="TELEFONE1" required />
+                                                        <label htmlFor="TELEFONE1"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Telefone</label>
                                                     </div>
@@ -621,15 +833,15 @@ function Agenda() {
                                                     <textarea className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                 rounded-l-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
                                                                                 h-40 md:h-52 dark:bg-slate-800"
-                                                        id="floatingDetalhes" name="HISTORICO" ></textarea>
-                                                    <label htmlFor="floatingDetalhes"
+                                                        id="HISTORICOAG" name="HISTORICOAG" ></textarea>
+                                                    <label htmlFor="HISTORICOAG"
                                                         className="absolute top-1 left-3 text-gray-500"
                                                     >Detalhes do Registro</label>
                                                 </div>
                                             </div>
                                             <div className="col-span-12 m-1">
                                                 <div className="relative flex w-full h-full rounded-lg shadow-sm justify-end">
-                                                    <button type="button" onClick={() => setAbreNovaAgenda(false)}
+                                                    <button type="button" onClick={handleAbreNovaAgenda}
                                                         className="bg-gray-300 text-black rounded px-4 py-2 mx-1"
                                                     >Cancelar</button>
                                                     <button type="submit" className="bg-blue-500 text-white rounded px-4 py-2 mx-1">Salvar</button>
@@ -761,13 +973,13 @@ function Agenda() {
                             )}
                             {mostraDetalhes && selecionaCodigo && (
                                 <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-                                    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg max-w-lg divide-y divide-black dark:divide-gray-100">
-                                        <div className='flex justify-between text-blue-700 mb-4'>
+                                    <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-lg max-w-lg divide-y divide-black dark:divide-gray-100">
+                                        <div className='flex justify-between text-blue-700 mb-2'>
                                             <h1 className="text-lg font-bold">Detalhes da Agenda</h1>
                                             <button type="button" onClick={() => setMostraDetalhes(false)} className="text-black dark:text-gray-100"><MdOutlineClose /></button>
                                         </div>
                                         <div className='mb-2'>
-                                            <dl className="grid grid-cols-3 p-1">
+                                            <dl className="grid grid-cols-3 p-2">
                                                 <dt className="col-start-1"><strong>Código do Cliente:</strong></dt>
                                                 <dd className="col-start-2"><span id="RegistroCodCli">{selecionaCodigo.CLIENTE}</span></dd>
                                                 <dt className="col-start-1"><strong>Nome/Razão:</strong></dt>
@@ -789,28 +1001,182 @@ function Agenda() {
                             )}
                             {alteraAgenda && selecionaCodigo && (
                                 <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-                                    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg w-full max-w-md divide-y divide-black dark:divide-gray-100">
+                                    <div className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-lg w-full max-w-xl divide-y divide-black dark:divide-gray-100">
                                         <div className='flex justify-between text-blue-700 mb-4'>
                                             <h1 className="text-lg font-bold">Altera a Agenda</h1>
-                                            <button type="button" onClick={() => setAlteraAgenda(false)} className="text-black dark:text-gray-100"><MdOutlineClose /></button>
+                                            <h2 className='self-end'>Atendimento Nº: {selecionaCodigo.CODIGO}</h2>
+                                            <button type="button" onClick={handleAtualizaAgenda} className="text-black dark:text-gray-100"><MdOutlineClose /></button>
                                         </div>
                                         <div className='mb-2'>
-                                            <dl className="grid grid-cols-2 p-2">
-                                                <dt className="col-start-1"><strong>Código do Cliente:</strong></dt>
-                                                <dd className="col-start-2"><span id="RegistroCodCli">{selecionaCodigo.CLIENTE}</span></dd>
-                                                <dt className="col-start-1"><strong>Nome/Razão:</strong></dt>
-                                                <dd className="col-start-2"><span id="RegistroNameCli">{selecionaCodigo.NOMEFANTASIA}</span></dd>
-                                                <dt className="col-start-1"><strong>CPF/CNPJ:</strong></dt>
-                                                <dd className="col-start-2"><span id="RegistroDocCli">{selecionaCodigo.CNPJ ? selecionaCodigo.CNPJ : selecionaCodigo.CPF}</span></dd>
-                                                <br></br>
-                                                <dt className="col-start-1"><strong>Atendimento Nº:</strong></dt>
-                                                <dd className="col-start-2"><span id="codigoRegistro">{selecionaCodigo.CODIGO}</span></dd>
-                                                <dt className="col-start-1"><strong>Detalhes:</strong></dt>
-                                                <dd className="col-start-2"><span id="detalhesRegistro"></span>{selecionaCodigo.HISTORICO}</dd><br></br>
-                                            </dl>
-                                        </div>
-                                        <div className='flex justify-end p-2'>
-                                            <button type="button" onClick={() => setAlteraAgenda(false)} className="bg-gray-300 text-black rounded px-4 py-1">Fechar</button>
+                                            <form onSubmit={handleSubmitAtualizaAgenda} className="md:grid md:grid-cols-12 items-center">
+                                            <div className="col-span-3 m-1">
+                                                <div className="relative flex w-full rounded-lg shadow-sm">
+                                                    <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-lg 
+                                                                            text-sm disabled:pointer-events-none">
+                                                        <input type="hidden" id="codigoAtendimentoAG" defaultValue={selecionaCodigo.CODIGO} />
+                                                        <input type="number" id="codClienteAtualizaAG" name="codClienteAtualizaAG"
+                                                            className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                                rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                                dark:bg-slate-800"                   
+                                                            defaultValue={selecionaCodigo.CLIENTE} 
+                                                            disabled/>
+                                                        <label htmlFor="codClienteAtualizaAG"
+                                                            className="text-sm absolute top-1 left-3 text-gray-500"
+                                                        >Cod Cliente
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-6 m-0.5">
+                                                <div className="relative flex w-full rounded-lg shadow-sm">
+                                                    <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                            text-sm disabled:pointer-events-none">
+                                                        <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                                                            rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                                                            dark:bg-slate-800"
+                                                            id="nomeClienteAtualizaAG" name="nomeClienteAtualizaAG" placeholder="Nome/Razão Social" 
+                                                            defaultValue={selecionaCodigo.NOMEFANTASIA?selecionaCodigo.NOMEFANTASIA:'Ainda não cadastrado'} 
+                                                            disabled />
+                                                        <label htmlFor="nomeClienteAtualizaAG"
+                                                            className="absolute top-1 left-3 text-gray-500"
+                                                        >Nome/Razão Social</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-3 m-0.5">
+                                                <div className="relative flex w-full rounded-lg shadow-sm">
+                                                    <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-lg 
+                                                                            text-sm disabled:pointer-events-none">
+                                                        <input type="text" id="documentoAtualizaAG" name="documentoAtualizaAG"
+                                                            className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                                rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                                dark:bg-slate-800"                   
+                                                            defaultValue={selecionaCodigo.CNPJ ? selecionaCodigo.CNPJ : selecionaCodigo.CPF}
+                                                            disabled/>
+                                                        <label htmlFor="documentoAtualizaAG"
+                                                            className="text-sm absolute top-1 left-3 text-gray-500"
+                                                        >CPF/CNPJ
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-3 m-0.5">
+                                                <div className="relative flex w-full rounded-lg shadow-sm">
+                                                    <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                            text-sm disabled:pointer-events-none">
+                                                        <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                                                            rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                                                            dark:bg-slate-800"
+                                                            id="contatoAtualizaAG" name="contatoAtualizaAG" 
+                                                            defaultValue={selecionaCodigo.CONTATO} required />
+                                                        <label htmlFor="contatoAtualizaAG"
+                                                            className="absolute top-1 left-3 text-gray-500"
+                                                        >Contato</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-6 m-0.5">
+                                                <div className="relative flex w-full rounded-lg shadow-sm">
+                                                    <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                            text-sm disabled:pointer-events-none">
+                                                        <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                                                            rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                                                            dark:bg-slate-800"
+                                                            id="assuntoAtualizaAG" name="assuntoAtualizaAG" 
+                                                            defaultValue={selecionaCodigo.ASSUNTO} required />
+                                                        <label htmlFor="assuntoAtualizaAG"
+                                                            className="absolute top-1 left-3 text-gray-500"
+                                                        >Assunto</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-3 m-0.5">
+                                                <div className="relative flex w-full rounded-lg shadow-sm">
+                                                    <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                            text-sm disabled:pointer-events-none">
+                                                        <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                                                rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                                                dark:bg-slate-800"
+                                                                id="responsaveAtualizalAG" name="responsaveAtualizalAG" 
+                                                            onFocus={() => handleErrorsForm('responsavelAG')}
+                                                            required>
+                                                            <option disabled>Selecione</option>
+                                                                {vendedor.map((item) => (
+                                                                    <option
+                                                                        key={item.CODIGO}
+                                                                        value={item.usuario_PARAMetro}
+                                                                        selected={item.usuario_PARAMetro === selecionaCodigo.RESPONSAVEL}
+                                                                    >
+                                                                        {item.usuario_PARAMetro}
+                                                                    </option>
+                                                                ))}
+                                                        </select>
+                                                        <label htmlFor="responsaveAtualizalAG"
+                                                            className="absolute top-1 left-3 text-gray-500"
+                                                        >Responsável</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-6 m-0.5">
+                                                <div className="relative flex w-full rounded-lg shadow-sm">
+                                                    <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                            text-sm disabled:pointer-events-none">
+                                                        <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                                                rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
+                                                                                dark:bg-slate-800"
+                                                            id="situacaoAtualizaAgenda" name="situacaoAtualizaAgenda" 
+                                                              required>
+                                                            <option selected disabled>Selecione</option>
+                                                            {situacaoAgenda.map((item, index) => (
+                                                                <option key={item.CODIGO} 
+                                                                        value={item.DESCRICAO}
+                                                                        selected={item.DESCRICAO===selecionaCodigo.SITUACAO}
+                                                                    >{item.DESCRICAO}</option>
+                                                            ))}
+                                                        </select>
+                                                        <label htmlFor="situacaoAtualizaAgenda"
+                                                            className="absolute top-1 left-3 text-gray-500"
+                                                        >Situacao</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-6 m-0.5">
+                                                <div className="relative flex w-full rounded-lg shadow-sm">
+                                                    <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
+                                                                            text-sm disabled:pointer-events-none">
+                                                        <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                                                            rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
+                                                                                            dark:bg-slate-800"
+                                                                id="atualizaTELEFONE1" name="atualizaTELEFONE1" 
+                                                                defaultValue={selecionaCodigo.TELEFONE1}
+                                                                required />
+                                                        <label htmlFor="atualizaTELEFONE1"
+                                                            className="absolute top-1 left-3 text-gray-500"
+                                                        >Telefone</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-12 m-1">
+                                                <div className="relative flex w-full h-full rounded-lg shadow-sm">
+                                                    <textarea className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                                                rounded-l-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                                                h-40 md:h-52 dark:bg-slate-800"
+                                                        id="atualizaHISTORICOAG" name="atualizaHISTORICOAG" 
+                                                        defaultValue={selecionaCodigo.HISTORICO.replace(/<br\s*\/?>/g, '\n')}></textarea>
+                                                    <label htmlFor="atualizaHISTORICOAG"
+                                                        className="absolute top-1 left-3 text-gray-500"
+                                                    >Detalhes do Registro</label>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-12 m-1">
+                                                <div className="relative flex w-full h-full rounded-lg shadow-sm justify-end">
+                                                    <button type="button" onClick={handleAtualizaAgenda} 
+                                                        className="bg-gray-300 text-black rounded px-4 py-2 mx-1"
+                                                    >Cancelar</button>
+                                                    <button type="submit" className="bg-blue-500 text-white rounded px-4 py-2 mx-1">Salvar</button>
+                                                </div>
+                                            </div>
+                                            </form>
                                         </div>
                                     </div>
                                 </div>
@@ -830,6 +1196,7 @@ function Agenda() {
                            
                 </>
             )}
+        <ToastContainer position="bottom-left"/>    
         </div>
     );
 
