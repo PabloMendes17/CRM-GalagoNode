@@ -31,6 +31,7 @@ interface AgendaItem {
     NOMEFANTASIA: string;
     CNPJ: string;
     CPF: string;
+    classDaSituacao?: string;
 }
 interface ClienteItem {
     CODIGO: number;
@@ -165,17 +166,9 @@ function Agenda() {
             const data = JSON.parse(event.data);
 
             if (data.event === "update") {
-                
-                if (filtroCodCliAgenda || filtroDtInicial || filtroDtFinal || filtroSituacaoAgenda) {
-
-                    handleFiltrarAgenda();
-                    notificacaoUsuario("Atualização da Agenda", "A agenda foi atualizada com sucesso!");
-                } else {
-
-                    notificacaoUsuario("Atualização da Agenda", "A agenda foi atualizada com sucesso!");
-                    atualizarAgendahoje();
-                }
-            } 
+                verificarAtualizacao();
+                notificacaoUsuario("Atualização da Agenda", "A agenda foi atualizada com sucesso!");
+            }
         }           
         ws.onclose = () => {
             console.log('Conexão fechada');
@@ -184,7 +177,20 @@ function Agenda() {
         return () => {
             ws.close(); 
         };
-    }, []);
+    }, [filtroCodCliAgenda, filtroDtInicial, filtroDtFinal, filtroSituacaoAgenda]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAgenda(prevAgenda => 
+                prevAgenda ? prevAgenda.map(item => ({
+                    ...item,
+                    classDaSituacao: getClassePorSituacao(item.DATA_AGENDA, item.HORA_AGENDA, item.SITUACAO)
+                })) : []
+            );
+        }, 1000);
+    
+        return () => clearInterval(interval);
+    }, [agenda]);
 
 
     function formatDateToBR(dateString: string): string {
@@ -196,6 +202,47 @@ function Agenda() {
         };
         return date.toLocaleDateString('pt-BR', options);
     }
+    const getClassePorSituacao = (dataAgenda:string, horaAgenda:string, situacao:string) => {
+        const dataAtual = new Date();
+        const horaAtual = dataAtual.getHours() * 60 + dataAtual.getMinutes(); 
+    
+        const dataAgendaObj = new Date(dataAgenda);
+        const horaAgendaObj = horaAgenda.split(':');
+        const horaAgendaMin = parseInt(horaAgendaObj[0], 10) * 60 + parseInt(horaAgendaObj[1], 10); 
+    console.log('Dt atual'+dataAtual);
+    console.log('Dt agenda'+dataAgendaObj);
+    console.log('horaAtual'+horaAtual);
+    console.log('HrAgenda'+horaAgendaMin);
+
+        if (dataAgendaObj > dataAtual) {
+            if (['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
+                return 'text-blue-800 dark:text-blue-500';
+            } else if (situacao === 'RESOLVIDO') {
+                return 'text-green-800 dark:text-green-400';
+            } else if (situacao === 'REAGENDADO') {
+                return 'text-yellow-600';
+            }
+        } else if (dataAgendaObj.getTime() === dataAtual.getTime()) {
+            if (horaAgendaMin < horaAtual && ['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
+                return 'text-red-800 dark:text-red-600';
+            } else if (horaAgendaMin >= horaAtual && ['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
+                return 'text-blue-800 dark:text-blue-500';
+            } else if (situacao === 'RESOLVIDO') {
+                return 'text-green-800 dark:text-green-400';
+            } else if (situacao === 'REAGENDADO') {
+                return 'text-yellow-600';
+            }
+        } else {
+            if (['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
+                return 'text-red-800 dark:text-red-600';
+            } else if (situacao === 'RESOLVIDO') {
+                return 'text-green-800 dark:text-green-400';
+            } else if (situacao === 'REAGENDADO') {
+                return 'text-yellow-600';
+            }
+        }
+        return ''; // Sem classe
+    };
 
     const handleAbreNovaAgenda = () => {
 
@@ -366,6 +413,17 @@ function Agenda() {
             });
         }
     };
+    const verificarAtualizacao = () => {
+        console.log('DadosCodCli: '+filtroCodCliAgenda);
+        console.log('DadosDTInicial: '+filtroDtInicial);
+        console.log('DadosDTFinal: '+filtroDtFinal);
+        console.log('DadosSituacaoAgenda: '+filtroSituacaoAgenda);
+        if (filtroCodCliAgenda || filtroDtInicial || filtroDtFinal || filtroSituacaoAgenda) {
+            handleFiltrarAgenda();
+        } else {
+            atualizarAgendahoje();
+        }
+    };
     const handlePaginaAnterior = () => {
         setPaginaAtualNaBuscaCliente(prevPage => Math.max(prevPage - quantidadeDePaginasNaNavegacaoDaBuscaCliente, 1));
     };
@@ -414,6 +472,7 @@ function Agenda() {
             }
             setFiltroCodCliAgenda('');
             setFiltroNomeRazao('');
+            console.log(filtroDtInicial);
             setAgenda(response.data.agendafiltrada);
         } catch (error) {
             console.error("Erro ao buscar cliente:", error);
@@ -544,10 +603,10 @@ function Agenda() {
                                         <th className="px-4 py-3 text-xs text-white tracking-wider">OPÇÕES</th>
                                     </tr>
                                 </thead>
-                                <tbody className="dark:text-gray-100">
+                                <tbody className="dark:text-gray-100 font-semibold">
                                     {agenda.map((item, index) => (
                                         <tr key={item.CODIGO}
-                                            className={`hover:bg-neutral-200 dark:hover:bg-slate-400 ${index % 2 === 0 ? 'bg-neutral-100 dark:bg-slate-500 ' : ''}`}
+                                            className={`hover:bg-neutral-200 dark:hover:bg-slate-600 ${index % 2 === 0 ? 'bg-neutral-100 dark:bg-sky-950 ' : ''}${item.classDaSituacao}`}
                                         >
                                             <td className="font-medium whitespace-nowrap">{item.CODIGO}</td>
                                             <td>{item.CONTATO}</td>
@@ -558,7 +617,7 @@ function Agenda() {
                                             <td>{item.HORA_AGENDA}</td>
                                             <td>{item.RESPONSAVEL}</td>
                                             <td>{item.OPERADOR}</td>
-                                            <td>{item.SITUACAO}</td>
+                                            <td >{item.SITUACAO}</td>
                                             <td className="text-lg">
                                                 <button className="p-1" onClick={() => { setSelecionaCodigo(item); setMostraDetalhes(true); }}><AiOutlineFolderView /></button>
                                                 <button className="p-1" onClick={() => { setSelecionaCodigo(item); setAlteraAgenda(true); }}><MdEdit /></button>

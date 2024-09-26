@@ -1,6 +1,6 @@
 function instaladores(){
     return(
-        <div className="grid md:grid-cols-4 grid-cols-2 overscroll-none">
+        <div className="grid md:grid-cols-4 grid-cols-2 h-[98%] overflow-auto scrollbar-custom">
             <div className="flex flex-col items-center w-[90%] text-white bg-blue-900 border-solid border-4 border-black rounded-md p-1 m-1" id="card">
                 <img src="/imagens/iconegalago.png" className="h-[50%] w-[40%] rounded-md" alt="..."/>
                 <div className="flex flex-col items-center p-2">

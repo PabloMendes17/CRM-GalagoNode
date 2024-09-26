@@ -1,4 +1,3 @@
-// src/components/Menu.tsx
 import React from 'react';
 import { HiHome,HiOutlineHome } from 'react-icons/hi';
 import { BsCalendar2DayFill,BsCalendar2Day } from 'react-icons/bs';

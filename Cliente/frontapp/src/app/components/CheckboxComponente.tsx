@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../styles/globals.css'; // Certifique-se de que o caminho está correto
+import '../styles/globals.css'; 
 
 const CheckboxComponente = ({ checked = false, onChange }) => {
     const [isChecked, setIsChecked] = useState(checked);
