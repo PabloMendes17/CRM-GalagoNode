@@ -6,6 +6,7 @@ import { AiOutlineFolderView } from "react-icons/ai";
 import { MdEdit, MdDeleteForever, MdOutlineClose } from "react-icons/md";
 import { useState, useEffect } from "react";
 import InputDocumento from '../components/InputDocumento';
+import InputFone from '../components/InputFone';
 import CheckboxComponente from '../components/CheckboxComponente';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -58,6 +59,7 @@ interface VendedorItem {
 
 function Agenda() {
 
+    const datahoje = new Date().toISOString().split('T')[0];
     const [mensagemServidor, setMensagemServidor] = useState('');
     const [agenda, setAgenda] = useState<AgendaItem[] | null>(null);
     const [cliente, setCliente] = useState<ClienteItem[]>([]);
@@ -81,6 +83,7 @@ function Agenda() {
     const [abreNovaAgenda, setAbreNovaAgenda] = useState<boolean>(false);
     const [abreBuscaCliente, setAbreBuscaCliente] = useState<boolean>(false);
     const [documento, setDocumento] = useState<string>(' ');
+    const [telefone1, setTelefone1] = useState('');
     const [clientesAtivos, setClientesAtivos] = useState<boolean>(true);
     const [selecionaCodigo, setSelecionaCodigo] = useState<AgendaItem | null>(null);
     const [selecionaCliente, setSelecionaCliente] = useState(null);
@@ -119,7 +122,7 @@ function Agenda() {
         const fetchData = async () => {
             try {
                 const [agendaRes, clientesRes, situacaoAgendaRes, tagAtendimentoRes, vendedoresRes] = await Promise.all([
-                    makeRequest.get("agendamentos/agendahoje"),
+                    makeRequest.get(`agendamentos/agendahoje?datahoje=${datahoje}`),
                     makeRequest.get(`agendamentos/clientes?pagina=${paginaAtualNaBuscaCliente}&resultadoPorPagina=${quantidadeDeClientesNaPaginaBuscaCliente}`),
                     makeRequest.get("agendamentos/situacaoagenda"),
                     makeRequest.get("agendamentos/tagatendimentos"),
@@ -202,19 +205,25 @@ function Agenda() {
         };
         return date.toLocaleDateString('pt-BR', options);
     }
-    const getClassePorSituacao = (dataAgenda:string, horaAgenda:string, situacao:string) => {
-        const dataAtual = new Date();
-        const horaAtual = dataAtual.getHours() * 60 + dataAtual.getMinutes(); 
-    
-        const dataAgendaObj = new Date(dataAgenda);
-        const horaAgendaObj = horaAgenda.split(':');
-        const horaAgendaMin = parseInt(horaAgendaObj[0], 10) * 60 + parseInt(horaAgendaObj[1], 10); 
-    console.log('Dt atual'+dataAtual);
-    console.log('Dt agenda'+dataAgendaObj);
-    console.log('horaAtual'+horaAtual);
-    console.log('HrAgenda'+horaAgendaMin);
+    const getClassePorSituacao = (dataAgenda: string, horaAgenda: string, situacao: string) => {
 
-        if (dataAgendaObj > dataAtual) {
+        const dataAtual = new Date();
+
+        const dataAtualZerada = new Date(dataAtual);
+        dataAtualZerada.setHours(0, 0, 0, 0);
+        
+        const dataAgendaObj = new Date(dataAgenda);
+
+        const dataAgendaZerada = new Date(dataAgendaObj);
+        dataAgendaZerada.setHours(0, 0, 0, 0);
+    
+        const horaAgendaObj = horaAgenda.split(':');
+        const horaAgendaMin = parseInt(horaAgendaObj[0], 10) * 60 + parseInt(horaAgendaObj[1], 10);
+
+        const horaAtual = dataAtual.getHours() * 60 + dataAtual.getMinutes(); 
+ 
+        if (dataAgendaZerada > dataAtualZerada) {
+
             if (['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
                 return 'text-blue-800 dark:text-blue-500';
             } else if (situacao === 'RESOLVIDO') {
@@ -222,17 +231,19 @@ function Agenda() {
             } else if (situacao === 'REAGENDADO') {
                 return 'text-yellow-600';
             }
-        } else if (dataAgendaObj.getTime() === dataAtual.getTime()) {
-            if (horaAgendaMin < horaAtual && ['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
-                return 'text-red-800 dark:text-red-600';
-            } else if (horaAgendaMin >= horaAtual && ['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
+        } else if (dataAgendaZerada.getTime() === dataAtualZerada.getTime()) {
+
+            if (horaAgendaMin > horaAtual && ['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
                 return 'text-blue-800 dark:text-blue-500';
+            } else if (horaAtual >= horaAgendaMin && ['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
+                return 'text-red-800 dark:text-red-600';
             } else if (situacao === 'RESOLVIDO') {
                 return 'text-green-800 dark:text-green-400';
             } else if (situacao === 'REAGENDADO') {
                 return 'text-yellow-600';
             }
         } else {
+            console.log('Data menor');
             if (['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
                 return 'text-red-800 dark:text-red-600';
             } else if (situacao === 'RESOLVIDO') {
@@ -241,9 +252,9 @@ function Agenda() {
                 return 'text-yellow-600';
             }
         }
-        return ''; // Sem classe
+        return ''; 
     };
-
+    
     const handleAbreNovaAgenda = () => {
 
         setAbreNovaAgenda(!abreNovaAgenda);
@@ -263,7 +274,8 @@ function Agenda() {
         const HORA_AGENDAAG = document.getElementById('HORA_AGENDAAG') as HTMLInputElement;
         const situacaoAgenda = document.getElementById('situacaoAgenda') as HTMLInputElement;
         const tipoAG = document.getElementById('tipoAG') as HTMLInputElement;
-        const TELEFONE1 = document.getElementById('TELEFONE1') as HTMLInputElement;
+        //const TELEFONE1 = document.getElementById('TELEFONE1') as HTMLInputElement;
+        const TELEFONE1 = telefone1;
         const HISTORICOAG = document.getElementById('HISTORICOAG') as HTMLInputElement;
 
         let validacaoErrorsForm = {
@@ -292,7 +304,7 @@ function Agenda() {
                 situacaoAgenda: situacaoAgenda.value,
                 tipoAG: tipoAG.value,
                 HISTORICOAG: HISTORICOAG.value,
-                TELEFONE1: TELEFONE1.value,
+                TELEFONE1: TELEFONE1,
                 responsavelAG: responsavelAG.value,
             });
     
@@ -319,7 +331,7 @@ function Agenda() {
     };
     const atualizarAgendahoje = async () => {
         try {
-            const agendaRes = await makeRequest.get("agendamentos/agendahoje");
+            const agendaRes = await makeRequest.get(`agendamentos/agendahoje?datahoje=${datahoje}`);
             setAgenda(agendaRes.data.agendahoje || []);
         } catch (error) {
             console.error("Erro ao buscar agenda:", error);
@@ -877,10 +889,14 @@ function Agenda() {
                                                 <div className="relative flex w-full rounded-lg shadow-sm">
                                                     <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
                                                                             text-sm disabled:pointer-events-none">
-                                                        <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                        <InputFone 
+                                                            value={telefone1} 
+                                                            onChange={(e) => setTelefone1(e.target.value)} 
+                                                            placeholder="(XX) XXXX-XXXX" 
+                                                            className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                             rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
                                                                                             dark:bg-slate-800"
-                                                            id="TELEFONE1" name="TELEFONE1" required />
+                                                            />    
                                                         <label htmlFor="TELEFONE1"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Telefone</label>
@@ -1203,12 +1219,17 @@ function Agenda() {
                                                 <div className="relative flex w-full rounded-lg shadow-sm">
                                                     <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
                                                                             text-sm disabled:pointer-events-none">
-                                                        <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+
+                                                            <InputFone 
+                                                            value={selecionaCodigo.TELEFONE1} 
+                                                            onChange={(e) => setTelefone1(e.target.value)} 
+                                                            placeholder="(XX) XXXX-XXXX" 
+                                                            className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                             rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
                                                                                             dark:bg-slate-800"
-                                                                id="atualizaTELEFONE1" name="atualizaTELEFONE1" 
-                                                                defaultValue={selecionaCodigo.TELEFONE1}
-                                                                required />
+                                                            id="atualizaTELEFONE1" 
+                                                            name="atualizaTELEFONE1"
+                                                            />     
                                                         <label htmlFor="atualizaTELEFONE1"
                                                             className="absolute top-1 left-3 text-gray-500"
                                                         >Telefone</label>

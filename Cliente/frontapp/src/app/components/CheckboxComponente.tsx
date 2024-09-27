@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import '../styles/globals.css'; 
 
-const CheckboxComponente = ({ checked = false, onChange }) => {
+interface CheckboxComponenteProps {
+    checked?: boolean;
+    onChange?: (checked: boolean) => void;
+}
+
+const CheckboxComponente: React.FC<CheckboxComponenteProps> = ({ checked = false, onChange}) => {
     const [isChecked, setIsChecked] = useState(checked);
 
     const handleChange = () => {

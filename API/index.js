@@ -1,6 +1,7 @@
 import express from "express";
 import vendedorRouter from "./routes/vendedor.js";
 import agendamentosRouter from "./routes/agendamentos.js";
+import atendimentosRouter from "./routes/atendimentos.js";
 import authRouter from "./routes/auth.js";
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -18,6 +19,7 @@ app.use(cors());
 app.use("/api/vendedores/",vendedorRouter);
 app.use("/api/auth/",authRouter);
 app.use("/api/agendamentos/",agendamentosRouter);
+app.use("/api/atendimentos/",atendimentosRouter);
 
 
 

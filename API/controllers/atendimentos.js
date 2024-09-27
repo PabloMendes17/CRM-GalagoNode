@@ -1,7 +1,7 @@
 import {db} from "../connect.js";
 import { updateAgenda } from "../index.js";
 
-export const getAgendaDeHoje = (req, res)=>{
+export const getAtendimentosDeHoje = (req, res)=>{
 
     const dataHoje = req.query.datahoje || new Date().toISOString().split('T')[0];
 
@@ -26,8 +26,8 @@ export const getAgendaDeHoje = (req, res)=>{
             CLIENTES.CPF
         FROM AGENDA LEFT JOIN CLIENTES ON 
         CLIENTES.CODIGO=AGENDA.CLIENTE  
-        WHERE AGENDA.TIPO in('AGENDAMENTO','AGENDAMENTO 1H','AGENDAMENTO 1H:30m','AGENDAMENTO 2H') AND 
-        AGENDA.DATA_AGENDA=? ORDER BY AGENDA.DATA_AGENDA,AGENDA.HORA_AGENDA`,[dataHoje],async(error, data)=>{
+        WHERE AGENDA.TIPO ='ATENDIMENTO' AND 
+        AGENDA.DATA_AGENDA=? ORDER BY AGENDA.DATA_AGENDA,AGENDA.HORA_AGENDA DESC`,[dataHoje],async(error, data)=>{
 
             if(error){
                 return res.status(500).json({
@@ -45,7 +45,7 @@ export const getAgendaDeHoje = (req, res)=>{
                 
                 return res.status(200).json({
 
-                    agendahoje:data,
+                    atendimentoshoje:data,
                 });
             }    
 
@@ -181,7 +181,7 @@ export const getVendedor = (req,res) =>{
     });
 };
 
-export const getAgendaFiltrada = (req, res) => {
+export const getAtendimentosFiltrados = (req, res) => {
     
     const CODCLI = req.query.CODCLI || "";
     const DATAINICIAL = req.query.DATAINICIAL || "";
@@ -190,7 +190,7 @@ export const getAgendaFiltrada = (req, res) => {
 
     const codcliNumber = CODCLI ? parseInt(CODCLI, 10) : null;
 
-    let query = "SELECT * FROM AGENDA WHERE AGENDA.TIPO in('AGENDAMENTO','AGENDAMENTO 1H','AGENDAMENTO 1H:30m','AGENDAMENTO 2H')";
+    let query = "SELECT * FROM AGENDA WHERE AGENDA.TIPO='ATENDIMENTO'";
     let params = [];
 
     if (CODCLI) {
@@ -230,13 +230,13 @@ export const getAgendaFiltrada = (req, res) => {
             return res.status(200).json({
 
                 msg: 'NÃO HÁ REGISTROS PARA OS PARAMETROS FORNECIDOS',
-                agendafiltrada: [],
+                atendimentofiltrado: [],
             });
         } else {
 
             return res.status(200).json({
 
-                agendafiltrada: data,
+                atendimentofiltrado: data,
             });
         }
     });
@@ -302,24 +302,24 @@ export const getClienteFiltrado = (req, res) => {
     });
 };
 
-export const postNovaAgenda =(req,res)=>{
+export const postNovoAtendimento =(req,res)=>{
 
     const { 
-        contatoAG,
-        operadorAG,
-        assuntoAG,
+        contatoAT,
+        operadorAT,
+        assuntoAT,
         codCli,
-        DATA_GRAVACAOAG,
-        DATA_AGENDAAG,
-        HORA_AGENDAAG,
+        DATA_GRAVACAOAT,
+        DATA_AGENDAAT,
+        HORA_AGENDAAT,
         situacaoAgenda,
-        tipoAG,
-        HISTORICOAG,
+        tipoAT,
+        HISTORICOAT,
         TELEFONE1,
-        responsavelAG,
+        responsavelAT,
     } = req.body;
 
-    const historicoFormatado = HISTORICOAG.replace(/\n/g, '<br>');
+    const historicoFormatado = HISTORICOAT.replace(/\n/g, '<br>');
 
     const query = `INSERT INTO AGENDA ( 
                                        CONTATO,
@@ -338,18 +338,18 @@ export const postNovaAgenda =(req,res)=>{
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const params = [
-                    contatoAG,
-                    operadorAG,
-                    assuntoAG,
+                    contatoAT,
+                    operadorAT,
+                    assuntoAT,
                     codCli,
-                    DATA_GRAVACAOAG,
-                    DATA_AGENDAAG,
-                    HORA_AGENDAAG,
+                    DATA_GRAVACAOAT,
+                    DATA_AGENDAAT,
+                    HORA_AGENDAAT,
                     situacaoAgenda,
-                    tipoAG,
+                    tipoAT,
                     historicoFormatado,
                     TELEFONE1,
-                    responsavelAG,];
+                    responsavelAT,];
 
     db.query(query, params, (error, result) => {
 
@@ -357,32 +357,31 @@ export const postNovaAgenda =(req,res)=>{
 
             console.error(error);
             return res.status(500).json({
-                msg: "Erro ao criar a agenda. Tente novamente.",
+                msg: "Erro ao cadastrar atendimento. Tente novamente.",
             });
         }
 
-        updateAgenda();
         return res.status(201).json({
             msg: "Agenda gravada com sucesso!",
-            agendaId: result.insertId,
+            atendimentoId: result.insertId,
         });
     });
 
 };
 
-export const postAtualizaAgenda = (req,res)=>{
+export const postAtualizaAtendimento = (req,res)=>{
 
     const { 
-        codigoAtendimentoAG,
-        contatoAtualizaAG,
-        assuntoAtualizaAG,
-        responsaveAtualizalAG,
+        codigoAtendimentoAT,
+        contatoAtualizaAT,
+        assuntoAtualizaAT,
+        responsavelAtualizaAT,
         situacaoAtualizaAgenda,
         atualizaTELEFONE1,
-        atualizaHISTORICOAG,
+        atualizaHISTORICOAT,
     } = req.body;
 
-    const historicoFormatado = atualizaHISTORICOAG.replace(/\n/g, '<br>');
+    const historicoFormatado = atualizaHISTORICOAT.replace(/\n/g, '<br>');
 
     const query = `UPDATE AGENDA SET 
                     CONTATO = ?, 
@@ -393,13 +392,13 @@ export const postAtualizaAgenda = (req,res)=>{
                     HISTORICO = ?  
                 WHERE CODIGO = ?`;
     const params = [
-                contatoAtualizaAG,
-                assuntoAtualizaAG,
-                responsaveAtualizalAG,
+                contatoAtualizaAT,
+                assuntoAtualizaAT,
+                responsavelAtualizaAT,
                 situacaoAtualizaAgenda,
                 atualizaTELEFONE1,
                 historicoFormatado,
-                codigoAtendimentoAG,];     
+                codigoAtendimentoAT,];     
 
            
     db.query(query, params, (error, result) => {
@@ -411,10 +410,10 @@ export const postAtualizaAgenda = (req,res)=>{
                 msg: "Erro ao atualizar os dados. Tente novamente.",
             });
         }
-        updateAgenda();
+        
         return res.status(201).json({
 
-            msg: "Agenda Atualizada com sucesso!",
+            msg: "Atendimento Atualizada com sucesso!",
         });
     });    
 }; 

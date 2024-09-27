@@ -40,9 +40,9 @@
 .checkbox-visible {
     width: 14px;
     height: 14px;
-    border: 2px solid #d1d5db; /* Gray border */
+    border: 2px solid #d1d5db; 
     border-radius: 4px;
-    background-color: #fff; /* White background */
+    background-color: #fff; 
     position: relative;
     cursor: pointer;
 }
@@ -65,8 +65,8 @@
 }
 
 .checkbox-hidden:checked + .checkbox-visible {
-    border-color: #3b82f6; /* Blue border */
-    background-color: #3b82f6; /* Blue background */
+    border-color: #3b82f6; 
+    background-color: #3b82f6; 
 }
 
 input[type=number]::-webkit-inner-spin-button,
