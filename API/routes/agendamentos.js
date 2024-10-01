@@ -7,7 +7,8 @@ import {getAgendaDeHoje,
         getAgendaFiltrada,
         getClienteFiltrado,
         postNovaAgenda,
-        postAtualizaAgenda} from "../controllers/agendamentos.js"
+        postAtualizaAgenda,
+        deleteDeletaAgenda} from "../controllers/agendamentos.js"
 
 const router= express.Router();
 
@@ -20,6 +21,7 @@ router.get("/agendafiltrada", getAgendaFiltrada);
 router.get("/clientefiltrado", getClienteFiltrado);
 router.post("/novaagenda", postNovaAgenda);
 router.post("/atualizaagenda",postAtualizaAgenda);
+router.delete("/deletaagenda", deleteDeletaAgenda);
 
 export default router;
 

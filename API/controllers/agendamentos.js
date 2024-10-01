@@ -1,5 +1,5 @@
 import {db} from "../connect.js";
-import { updateAgenda } from "../index.js";
+import { updateAgenda, deletaAgenda } from "../index.js";
 
 export const getAgendaDeHoje = (req, res)=>{
 
@@ -411,6 +411,7 @@ export const postAtualizaAgenda = (req,res)=>{
                 msg: "Erro ao atualizar os dados. Tente novamente.",
             });
         }
+
         updateAgenda();
         return res.status(201).json({
 
@@ -418,3 +419,28 @@ export const postAtualizaAgenda = (req,res)=>{
         });
     });    
 }; 
+
+export const deleteDeletaAgenda =(req,res) =>{
+    
+    const CODIGO = req.query.codigo;
+
+    const query = `DELETE FROM AGENDA WHERE CODIGO = ?`;
+    const params=[CODIGO];
+
+    db.query(query, params, (error, result) => {
+
+        if (error) {
+
+            console.error(error);
+            return res.status(500).json({
+                msg: "Erro ao apagar os dados. Tente novamente.",
+            });
+        }
+
+        deletaAgenda();
+        return res.status(200).json({
+            
+            msg: "Registro apagado com sucesso!",
+        });
+    });
+};

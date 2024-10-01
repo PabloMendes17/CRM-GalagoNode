@@ -1,5 +1,5 @@
 import {db} from "../connect.js";
-import { updateAgenda } from "../index.js";
+import { updateAtendimento,deletaAtendimento } from "../index.js";
 
 export const getAtendimentosDeHoje = (req, res)=>{
 
@@ -216,7 +216,7 @@ export const getAtendimentosFiltrados = (req, res) => {
        query+="ORDER BY DATA_AGENDA,HORA_AGENDA"
     
     db.query(query, params, (error, data) => {
-        
+
         if (error) {
 
             console.log(error);
@@ -307,7 +307,7 @@ export const postNovoAtendimento =(req,res)=>{
     const { 
         contatoAT,
         operadorAT,
-        assuntoAT,
+        tagAtendimentoAT,
         codCli,
         DATA_GRAVACAOAT,
         DATA_AGENDAAT,
@@ -340,7 +340,7 @@ export const postNovoAtendimento =(req,res)=>{
     const params = [
                     contatoAT,
                     operadorAT,
-                    assuntoAT,
+                    tagAtendimentoAT,
                     codCli,
                     DATA_GRAVACAOAT,
                     DATA_AGENDAAT,
@@ -361,6 +361,7 @@ export const postNovoAtendimento =(req,res)=>{
             });
         }
 
+        updateAtendimento();
         return res.status(201).json({
             msg: "Agenda gravada com sucesso!",
             atendimentoId: result.insertId,
@@ -376,7 +377,7 @@ export const postAtualizaAtendimento = (req,res)=>{
         contatoAtualizaAT,
         assuntoAtualizaAT,
         responsavelAtualizaAT,
-        situacaoAtualizaAgenda,
+        situacaoAtualizaAtendimento,
         atualizaTELEFONE1,
         atualizaHISTORICOAT,
     } = req.body;
@@ -395,7 +396,7 @@ export const postAtualizaAtendimento = (req,res)=>{
                 contatoAtualizaAT,
                 assuntoAtualizaAT,
                 responsavelAtualizaAT,
-                situacaoAtualizaAgenda,
+                situacaoAtualizaAtendimento,
                 atualizaTELEFONE1,
                 historicoFormatado,
                 codigoAtendimentoAT,];     
@@ -410,10 +411,35 @@ export const postAtualizaAtendimento = (req,res)=>{
                 msg: "Erro ao atualizar os dados. Tente novamente.",
             });
         }
-        
+        updateAtendimento();
         return res.status(201).json({
 
-            msg: "Atendimento Atualizada com sucesso!",
+            msg: "Atendimento Atualizado com sucesso!",
         });
     });    
 }; 
+
+export const deleteDeletaAtendimento =(req,res) =>{
+    
+    const CODIGO = req.query.codigo;
+
+    const query = `DELETE FROM AGENDA WHERE CODIGO = ?`;
+    const params=[CODIGO];
+
+    db.query(query, params, (error, result) => {
+
+        if (error) {
+
+            console.error(error);
+            return res.status(500).json({
+                msg: "Erro ao apagar os dados. Tente novamente.",
+            });
+        }
+        
+        deletaAtendimento();
+        return res.status(200).json({
+
+            msg: "Registro apagado com sucesso!",
+        });
+    });
+};

@@ -7,7 +7,8 @@ import {getAtendimentosDeHoje,
         getAtendimentosFiltrados,
         getClienteFiltrado,
         postNovoAtendimento,
-        postAtualizaAtendimento} from "../controllers/atendimentos.js"
+        postAtualizaAtendimento,
+        deleteDeletaAtendimento} from "../controllers/atendimentos.js"
 
 const router= express.Router();
 
@@ -20,6 +21,8 @@ router.get("/atendimentosfiltrados", getAtendimentosFiltrados);
 router.get("/clientefiltrado", getClienteFiltrado);
 router.post("/novoatendimento", postNovoAtendimento);
 router.post("/atualizaatendimento",postAtualizaAtendimento);
+router.delete("/deletaatendimento",deleteDeletaAtendimento)
+
 
 export default router;
 

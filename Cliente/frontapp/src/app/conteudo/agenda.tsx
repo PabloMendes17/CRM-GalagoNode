@@ -168,9 +168,13 @@ function Agenda() {
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
 
-            if (data.event === "update") {
+            if (data.event === "updateAgenda") {
                 verificarAtualizacao();
                 notificacaoUsuario("Atualização da Agenda", "A agenda foi atualizada com sucesso!");
+            }
+
+            if(data.event === "deleta"){
+                verificarAtualizacao();
             }
         }           
         ws.onclose = () => {
@@ -243,7 +247,7 @@ function Agenda() {
                 return 'text-yellow-600';
             }
         } else {
-            console.log('Data menor');
+            
             if (['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
                 return 'text-red-800 dark:text-red-600';
             } else if (situacao === 'RESOLVIDO') {
@@ -259,6 +263,13 @@ function Agenda() {
 
         setAbreNovaAgenda(!abreNovaAgenda);
         setIsFiltroVisible(false);
+        setErrorsForm({
+            codCli: false,
+            nomeCli: false,
+            responsavelAG: false,
+            situacaoAgenda: false,
+            tipoAG: false,
+        })
     };
     const handleSubmitAgenda = async (event:any) => {
         event.preventDefault();
@@ -329,6 +340,12 @@ function Agenda() {
             [field]: false,
         }));
     };
+    const handleErrorsFormUp = (field:any) => {
+        setErrorsFormUp((prevErrors) => ({
+            ...prevErrors,
+            [field]: false,
+        }));
+    };
     const atualizarAgendahoje = async () => {
         try {
             const agendaRes = await makeRequest.get(`agendamentos/agendahoje?datahoje=${datahoje}`);
@@ -354,6 +371,15 @@ function Agenda() {
     const handleAtualizaAgenda = () => {
 
         setAlteraAgenda(!alteraAgenda);
+        setErrorsFormUp({
+            codigoAtendimentoAG: false, 
+            contatoAtualizaAG: false,
+            assuntoAtualizaAG: false,
+            responsaveAtualizalAG: false,
+            situacaoAtualizaAgenda: false,
+            atualizaTELEFONE1: false,
+            atualizaHISTORICOAG: false        
+        });
     };
     const handleSubmitAtualizaAgenda = async (event:any) =>{
         event.preventDefault();
@@ -410,11 +436,27 @@ function Agenda() {
         }
     };
 
-    const handleDeleta = () => {
+    const handleDeleta = async () => {
 
         if (selecionaCodigo) {
 
-            setDeletaAgenda(false);
+            try {
+                const response = await makeRequest.delete(`agendamentos/deletaagenda?codigo=${selecionaCodigo.CODIGO}`);
+                console.log(selecionaCodigo.CODIGO);
+                if (response.status === 200) {
+                    toast.success('Registro excluído com sucesso!');
+
+                } else {
+                    throw new Error(response.data.msg || 'Erro ao excluir o registro.');
+                }
+            } catch (error:any) {
+
+                console.error(error);
+                toast.error('Erro ao excluir o registro: ' + error.response.data.msg);
+            } finally {
+
+                setDeletaAgenda(false);
+            }
         }
     };
     const notificacaoUsuario = (titulo:string, mensagem:string) => {
@@ -482,9 +524,10 @@ function Agenda() {
 
                 setMensagemServidor(response.data.msg);
             }
+
             setFiltroCodCliAgenda('');
             setFiltroNomeRazao('');
-            console.log(filtroDtInicial);
+
             setAgenda(response.data.agendafiltrada);
         } catch (error) {
             console.error("Erro ao buscar cliente:", error);
@@ -602,7 +645,7 @@ function Agenda() {
                             <table className="min-w-full divide-y divide-gray-500 text-center text-xs">
                                 <thead className="bg-blue-950 dark:bg-gray-900 sticky top-0 z-10">
                                     <tr>
-                                        <th className="px-4 py-3 text-xs text-white tracking-wider">CODIGO</th>
+                                        <th className="px-4 py-3 text-xs text-white tracking-wider">CÓDIGO</th>
                                         <th className="px-4 py-3 text-xs text-white tracking-wider">CONTATO</th>
                                         <th className="px-4 py-3 text-xs text-white tracking-wider">ASSUNTO</th>
                                         <th className="px-4 py-3 text-xs text-white tracking-wider">TIPO</th>
@@ -645,7 +688,7 @@ function Agenda() {
                             <table className="min-w-full divide-y divide-gray-500 text-center text-xs">
                             <thead className="bg-blue-950 dark:bg-gray-900 sticky top-0 z-10">
                                 <tr>
-                                    <th className="px-4 py-3 text-xs text-white tracking-wider">CODIGO</th>
+                                    <th className="px-4 py-3 text-xs text-white tracking-wider">CÓDIGO</th>
                                     <th className="px-4 py-3 text-xs text-white tracking-wider">CONTATO</th>
                                     <th className="px-4 py-3 text-xs text-white tracking-wider">ASSUNTO</th>
                                     <th className="px-4 py-3 text-xs text-white tracking-wider">TIPO</th>
@@ -736,10 +779,10 @@ function Agenda() {
                                                         <select className={`w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
                                                                                 dark:bg-slate-800 ${errorsForm.responsavelAG ? 'border-red-500' : ''} `}
-                                                            aria-label="Default select example" id="responsavelAG" name="responsavelAG" 
+                                                            id="responsavelAG" name="responsavelAG" 
                                                             onFocus={() => handleErrorsForm('responsavelAG')}
                                                             required>
-                                                            <option selected disabled>Selecione</option>
+                                                            <option value="" disabled>Selecione</option>
                                                             {vendedor.map((item, index) => (
                                                                 <option key={item.CODIGO} value={item.usuario_PARAMetro}>{item.usuario_PARAMetro}</option>
                                                             ))}
@@ -759,7 +802,7 @@ function Agenda() {
                                                                                 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
                                                                                 dark:bg-slate-800"
                                                             aria-label="Default select example" id="operadorAG" name="operadorAG" required disabled>
-                                                            <option selected value={usuarioLogado.usuario_PARAMetro}>{usuarioLogado.usuario_PARAMetro}</option>
+                                                            <option value={usuarioLogado.usuario_PARAMetro}>{usuarioLogado.usuario_PARAMetro}</option>
                                                         </select>
                                                         <label htmlFor="operadorAG"
                                                             className="absolute top-1 left-3 text-gray-500"
@@ -853,7 +896,7 @@ function Agenda() {
                                                             id="situacaoAgenda" name="situacaoAgenda" 
                                                             onFocus={() => handleErrorsForm('situacaoAgenda')}
                                                             required>
-                                                            <option selected disabled>Selecione</option>
+                                                            <option disabled>Selecione</option>
                                                             {situacaoAgenda.map((item, index) => (
                                                                 <option key={item.CODIGO} value={item.DESCRICAO}>{item.DESCRICAO}</option>
                                                             ))}
@@ -961,7 +1004,7 @@ function Agenda() {
                                                     <table className='w-full'>
                                                         <thead className="text-white bg-blue-950 dark:bg-gray-900">
                                                             <tr>
-                                                                <th className="">CODIGO</th>
+                                                                <th className="">CÓDIGO</th>
                                                                 <th className="">NOME/RAZAO</th>
                                                                 <th className="">DOCUMENTO</th>
                                                             </tr>
@@ -1154,10 +1197,11 @@ function Agenda() {
                                                 <div className="relative flex w-full rounded-lg shadow-sm">
                                                     <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
                                                                             text-sm disabled:pointer-events-none">
-                                                        <input type="text" className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                        <input type="text" className={`w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                             rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                                                                            dark:bg-slate-800"
+                                                                                            dark:bg-slate-800 ${errorsFormUp.assuntoAtualizaAG?'border-red-500':''} `}
                                                             id="assuntoAtualizaAG" name="assuntoAtualizaAG" 
+                                                            onFocus={() => handleErrorsFormUp('assuntoAtualizaAG')}
                                                             defaultValue={selecionaCodigo.ASSUNTO} required />
                                                         <label htmlFor="assuntoAtualizaAG"
                                                             className="absolute top-1 left-3 text-gray-500"
@@ -1173,7 +1217,7 @@ function Agenda() {
                                                                                 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
                                                                                 dark:bg-slate-800"
                                                                 id="responsaveAtualizalAG" name="responsaveAtualizalAG" 
-                                                            onFocus={() => handleErrorsForm('responsavelAG')}
+                                                            onFocus={() => handleErrorsFormUp('responsaveAtualizalAG')}
                                                             required>
                                                             <option disabled>Selecione</option>
                                                                 {vendedor.map((item) => (
@@ -1196,11 +1240,12 @@ function Agenda() {
                                                 <div className="relative flex w-full rounded-lg shadow-sm">
                                                     <div className="flex flex-wrap block w-full border-gray-200 shadow-sm rounded-s-lg 
                                                                             text-sm disabled:pointer-events-none">
-                                                        <select className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                        <select className={`w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
-                                                                                dark:bg-slate-800"
+                                                                                dark:bg-slate-800 ${errorsFormUp.situacaoAtualizaAgenda?'border-red-500':''} `}
                                                             id="situacaoAtualizaAgenda" name="situacaoAtualizaAgenda" 
-                                                              required>
+                                                            onFocus={()=> handleErrorsFormUp('situacaoAtualizaAgenda')}  
+                                                            required>
                                                             <option selected disabled>Selecione</option>
                                                             {situacaoAgenda.map((item, index) => (
                                                                 <option key={item.CODIGO} 
@@ -1222,11 +1267,13 @@ function Agenda() {
 
                                                             <InputFone 
                                                             value={selecionaCodigo.TELEFONE1} 
-                                                            onChange={(e) => setTelefone1(e.target.value)} 
+                                                            onChange={(e) =>{setTelefone1(e.target.value);
+                                                                             handleErrorsFormUp('atualizaTELEFONE1');   
+                                                            }} 
                                                             placeholder="(XX) XXXX-XXXX" 
-                                                            className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                            className={`w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                             rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
-                                                                                            dark:bg-slate-800"
+                                                                                            dark:bg-slate-800 ${errorsFormUp.atualizaTELEFONE1? 'border-red-500':''}`}
                                                             id="atualizaTELEFONE1" 
                                                             name="atualizaTELEFONE1"
                                                             />     
@@ -1238,10 +1285,11 @@ function Agenda() {
                                             </div>
                                             <div className="col-span-12 m-1">
                                                 <div className="relative flex w-full h-full rounded-lg shadow-sm">
-                                                    <textarea className="w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
+                                                    <textarea className={`w-full h-full pt-6 pb-2 pl-3 block border border-gray-300 dark:border-gray-600
                                                                                 rounded-l-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                                                                h-40 md:h-52 dark:bg-slate-800"
-                                                        id="atualizaHISTORICOAG" name="atualizaHISTORICOAG" 
+                                                                                h-40 md:h-52 dark:bg-slate-800 ${errorsFormUp.atualizaHISTORICOAG ? 'border-red-500' : ''} `}
+                                                        id="atualizaHISTORICOAG" name="atualizaHISTORICOAG"
+                                                        onFocus={() => handleErrorsFormUp('atualizaHISTORICOAG')} 
                                                         defaultValue={selecionaCodigo.HISTORICO.replace(/<br\s*\/?>/g, '\n')}></textarea>
                                                     <label htmlFor="atualizaHISTORICOAG"
                                                         className="absolute top-1 left-3 text-gray-500"

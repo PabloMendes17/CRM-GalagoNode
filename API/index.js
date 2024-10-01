@@ -2,6 +2,7 @@ import express from "express";
 import vendedorRouter from "./routes/vendedor.js";
 import agendamentosRouter from "./routes/agendamentos.js";
 import atendimentosRouter from "./routes/atendimentos.js";
+import dashboardRouter from "./routes/dashboard.js";
 import authRouter from "./routes/auth.js";
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -20,6 +21,7 @@ app.use("/api/vendedores/",vendedorRouter);
 app.use("/api/auth/",authRouter);
 app.use("/api/agendamentos/",agendamentosRouter);
 app.use("/api/atendimentos/",atendimentosRouter);
+app.use("/api/dashboard/",dashboardRouter);
 
 
 
@@ -51,7 +53,22 @@ const broadcast = (data) => {
 };
 
 export const updateAgenda = () => {
-    const message = JSON.stringify({ event: "update", data: "Agenda atualizada!" });
+    const message = JSON.stringify({ event: "updateAgenda", data: "Agenda atualizada!" });
+    broadcast(message);
+};
+
+export const updateAtendimento = () => {
+    const message = JSON.stringify({ event: "updateAtendimento", data: "Atendimento atualizada!" });
+    broadcast(message);
+};
+
+export const deletaAgenda = () => {
+    const message = JSON.stringify({ event: "deleta", data: "Agenda deletada!" });
+    broadcast(message);
+};
+
+export const deletaAtendimento = () => {
+    const message = JSON.stringify({ event: "deleta", data: "Atendimento deletado!" });
     broadcast(message);
 };
 
