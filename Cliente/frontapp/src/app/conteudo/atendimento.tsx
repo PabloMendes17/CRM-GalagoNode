@@ -58,7 +58,7 @@ interface VendedorItem {
 }
 
 
-function atendimento(){
+function Atendimento(){
     
     const datahoje = new Date().toISOString().split('T')[0];
     const [mensagemServidor, setMensagemServidor] = useState('');
@@ -1359,4 +1359,4 @@ function atendimento(){
     );
 
 
-}export default atendimento;
+}export default Atendimento;

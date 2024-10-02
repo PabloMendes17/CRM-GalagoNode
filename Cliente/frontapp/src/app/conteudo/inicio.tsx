@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { makeRequest } from "../../../axios";
 import { Chart } from "react-google-charts";
 
-function inicio(){
+function Inicio(){
 
     const diaDeHoje= new Date();
     const primeiroDiaDoMes = new Date(diaDeHoje.getFullYear(), diaDeHoje.getMonth(), 1);
@@ -153,4 +153,4 @@ function inicio(){
         </div>
     );
    
-}export default inicio;
+}export default Inicio;
