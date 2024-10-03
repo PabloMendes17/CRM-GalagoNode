@@ -40,7 +40,8 @@ para solucionar utilize
 
 Se a API estiver disponivel e acessivel utiize o pm2 para deixa-la permanentemente executando 
   npm install pm2 -g
-  pm2 start npm --name "FRONTcrmgalago" -- start
+  pare o serviço e reinicie com o comando abaixo
+  pm2 start npm --name "APIcrmgalago" -- start
 
 
 Start API 
@@ -66,7 +67,11 @@ Start API
       Execute:  
       npm install
       npm start
-  
+       
   Teste o acesso no endereço da sua aplicação.   
+
+  Caso tudo funcione corretamente utilize o pm2 para deixar o serviço disponível
+  pare o serviço e reinicie com o comando abaixo
+  pm2 start npm --name "FRONTcrmgalago" -- run start
 
 
