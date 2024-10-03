@@ -1,4 +1,46 @@
+import { useEffect } from "react";
+
+
 function Instaladores(){
+
+    useEffect(() => {
+        const webSocketEndereco =process.env.NEXT_PUBLIC_WEBSOCKET_URL;
+
+        if(!webSocketEndereco){
+            throw new Error('Endereço WebSocket Inválido');
+        }
+        const ws = new WebSocket(webSocketEndereco);
+
+        ws.onopen = () => {
+            console.log('Conectado ao servidor WebSocket');
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            if (data.event === "update") {
+
+                notificacaoUsuario("Atualização da Agenda", "A agenda foi atualizada com sucesso!");
+            }
+        }           
+        ws.onclose = () => {
+            console.log('Conexão fechada');
+        };
+
+        return () => {
+            ws.close(); 
+        };
+    }, []);
+
+    const notificacaoUsuario = (titulo:string, mensagem:string) => {
+        if (Notification.permission === "granted") {
+            new Notification(titulo, {
+                body: mensagem,
+                icon: '/favicon.ico' 
+            });
+        }
+    };
+
     return(
         <div className="grid md:grid-cols-4 grid-cols-2 h-[98%] overflow-auto scrollbar-custom">
             <div className="flex flex-col items-center w-[90%] text-white bg-blue-900 border-solid border-4 border-black rounded-md p-1 m-1" id="card">

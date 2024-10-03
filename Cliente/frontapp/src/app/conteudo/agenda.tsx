@@ -159,7 +159,13 @@ function Agenda() {
         fetchData();
     }, [paginaAtualNaBuscaCliente, quantidadeDeClientesNaPaginaBuscaCliente, totalClientes]);
     useEffect(() => {
-        const ws = new WebSocket('ws://localhost:8001');
+
+        const webSocketEndereco =process.env.NEXT_PUBLIC_WEBSOCKET_URL;
+
+        if(!webSocketEndereco){
+            throw new Error('Endereço WebSocket Inválido');
+        }
+        const ws = new WebSocket(webSocketEndereco);
 
         ws.onopen = () => {
             console.log('Conectado ao servidor WebSocket');
@@ -201,32 +207,32 @@ function Agenda() {
 
 
     function formatDateToBR(dateString: string): string {
-        const date = new Date(dateString);
-        const options: Intl.DateTimeFormatOptions = {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        };
-        return date.toLocaleDateString('pt-BR', options);
+
+        const dataAgenda=new Date(dateString).toISOString().split('T')[0];
+        const [year, month, day] = dataAgenda.split('-');
+        const formattedDate = `${day}/${month}/${year}`;
+
+        return formattedDate;
     }
     const getClassePorSituacao = (dataAgenda: string, horaAgenda: string, situacao: string) => {
 
         const dataAtual = new Date();
-
-        const dataAtualZerada = new Date(dataAtual);
+        const dataAtualZerada = new Date(dataAtual)
         dataAtualZerada.setHours(0, 0, 0, 0);
         
         const dataAgendaObj = new Date(dataAgenda);
-
-        const dataAgendaZerada = new Date(dataAgendaObj);
+        const dataAgendaZerada = new Date(dataAgendaObj)
         dataAgendaZerada.setHours(0, 0, 0, 0);
+
+        const dataAtualString = dataAtualZerada.toISOString().split('T')[0];
+        const dataAgendaString = dataAgendaZerada.toISOString().split('T')[0];
     
         const horaAgendaObj = horaAgenda.split(':');
         const horaAgendaMin = parseInt(horaAgendaObj[0], 10) * 60 + parseInt(horaAgendaObj[1], 10);
 
         const horaAtual = dataAtual.getHours() * 60 + dataAtual.getMinutes(); 
  
-        if (dataAgendaZerada > dataAtualZerada) {
+        if (dataAgendaString > dataAtualString) {
 
             if (['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
                 return 'text-blue-800 dark:text-blue-500';
@@ -235,8 +241,8 @@ function Agenda() {
             } else if (situacao === 'REAGENDADO') {
                 return 'text-yellow-600';
             }
-        } else if (dataAgendaZerada.getTime() === dataAtualZerada.getTime()) {
-
+        } else if (dataAgendaString === dataAtualString) {
+            
             if (horaAgendaMin > horaAtual && ['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {
                 return 'text-blue-800 dark:text-blue-500';
             } else if (horaAtual >= horaAgendaMin && ['PENDENTE', 'AGUARDANDO DESENVOLVIMENTO', 'AGUARDANDO SUPERVISAO', 'AGUARDANDO FINANCEIRO', 'NAO CONSEGUIMOS CONTATO'].includes(situacao)) {

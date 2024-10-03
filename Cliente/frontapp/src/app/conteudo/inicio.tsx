@@ -59,7 +59,12 @@ function Inicio(){
 
         fetchData();
 
-        const ws = new WebSocket('ws://localhost:8001');
+        const webSocketEndereco =process.env.NEXT_PUBLIC_WEBSOCKET_URL;
+
+        if(!webSocketEndereco){
+            throw new Error('Endereço WebSocket Inválido');
+        }
+        const ws = new WebSocket(webSocketEndereco);
 
         ws.onopen = () => {
             console.log('Conectado ao servidor WebSocket');

@@ -13,7 +13,11 @@ const PORT = 8001;
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({extended: false}));
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 
 
@@ -25,7 +29,7 @@ app.use("/api/dashboard/",dashboardRouter);
 
 
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log("Servidor Rodando na porta " + PORT);
 });
 
