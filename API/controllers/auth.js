@@ -23,9 +23,9 @@ export const login = (req, res)=>{
             
             }else{
 
-                const usuarioLogado = data[0];
+                const usuario = data[0];
                 const saltRounds = 10;
-                const senhaHash = await bcrypt.hash(usuarioLogado.SENHA, saltRounds);
+                const senhaHash = await bcrypt.hash(usuario.SENHA, saltRounds);
                 const confereSenha = await bcrypt.compare(senha, senhaHash);
 
                 if(!confereSenha){
@@ -36,16 +36,17 @@ export const login = (req, res)=>{
                     try{
                         const atualizaToken=jwt.sign({
                             exp: Math.floor(Date.now()/1000) + 24 * 60 * 60,
-                            id:usuarioLogado.SENHA
+                            id:usuario.SENHA
                         }, process.env.REFRESH,
                         {algorithm:"HS256"}
                         )
                         const token=jwt.sign({
                             exp: Math.floor(Date.now()/1000) + 3600,
-                            id:usuarioLogado.SENHA
+                            id:usuario.SENHA
                         }, process.env.TOKEN,
                         {algorithm:"HS256"}
                         )
+                        const usuarioLogado=usuario.NOME;
                         return res.status(200).json({msg: 'Logado com sucesso',
                                                     data:{usuarioLogado,token:{token,atualizaToken}}
                                                 });

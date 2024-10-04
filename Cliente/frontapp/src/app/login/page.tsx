@@ -1,8 +1,8 @@
 "use client";
-import { M_PLUS_1_Code } from "next/font/google";
-import Link from "next/link";
+import Cookies from 'js-cookie';
+import CryptoJS from 'crypto-js';
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { makeRequest } from "../../../axios";
 
 function Login(){
@@ -10,10 +10,37 @@ function Login(){
     const [email,setEmail]=useState('');
     const [senha,setSenha]=useState('');
     const [error,setError]=useState('');
+    const [lembrar, setLembrar] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+
+        const secretKey = Cookies.get("CrmGalago:token");
+        const emailCookie = Cookies.get('CrmGalago:email');
+        const senhaCookie = Cookies.get('CrmGalago:senha');
+        console.log(emailCookie+' , '+senhaCookie +' , '+secretKey );
+
+        if (emailCookie) {
+            setEmail(emailCookie);
+        }
+
+        if (senhaCookie && secretKey) {
+            const senhaLogin = CryptoJS.AES.decrypt(senhaCookie, secretKey); 
+            const planoSenhaLogin = senhaLogin.toString(CryptoJS.enc.Utf8);
+            console.log(senhaLogin+' , '+planoSenhaLogin);
+            setSenha(planoSenhaLogin);
+            if (planoSenhaLogin) {
+                setSenha(planoSenhaLogin);
+                console.log("Senha descriptografada:", planoSenhaLogin);
+            } else {
+                console.error("Falha na descriptografia da senha");
+            }
+        }
+    }, []);
 
     const doLogin= (e:any)=>{
         e.preventDefault();
+
 
         if(!email){
             setError("Email não informado");
@@ -23,6 +50,16 @@ function Login(){
             makeRequest.post("auth/login",{email,senha}).then((res)=>{
                 localStorage.setItem("CrmGalago:usuarioLogado",JSON.stringify(res.data.data.usuarioLogado))
                 localStorage.setItem("CrmGalago:token",JSON.stringify(res.data.data.token))
+                Cookies.set("CrmGalago:token",JSON.stringify(res.data.data.token));
+                
+                if(lembrar){
+
+                    const secretKey = JSON.stringify(res.data.data.token);
+                    Cookies.set('CrmGalago:email', email, { expires: 7 });
+                    const senhaHash = CryptoJS.AES.encrypt(senha, secretKey).toString();
+                    Cookies.set('CrmGalago:senha', senhaHash, { expires: 7 }); 
+                }
+
                 setError('');
                 router.push("/home");
            }).catch((err)=>{
@@ -42,7 +79,6 @@ function Login(){
         }
     }
 
-    //console.log(email,senha);
 
     return(
 
@@ -60,20 +96,23 @@ function Login(){
                                 <div className="h-18 m-4">
                                     <label className="block text-sm font-medium leading-6 text-gray-900" htmlFor="inputEmail">Email</label>                                    
                                     <input  required  className="w-full h-12 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:border-sky-500 p-2" 
-                                                      id="inputEmail" type="email" placeholder="nome@example.com" name="email" 
+                                                      id="inputEmail" type="email" placeholder="nome@example.com" name="email"  value={email}
                                                     onChange={(e)=>setEmail(e.currentTarget.value)}  
                                     />
                                 </div>
                                 <div className="h-18 m-4">
                                     <label className="block text-sm font-medium leading-6 text-gray-900" htmlFor="inputPassword">Senha</label>
                                     <input  required  className="w-full h-12 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:border-sky-500 p-2" 
-                                                      id="inputPassword" type="password" placeholder="Senha" name="senha"   
+                                                      id="inputPassword" type="password" placeholder="Senha" name="senha" value={senha}   
                                                     onChange={(e)=>setSenha(e.currentTarget.value)}
                                     />
                                 </div>
                                 <div className="flex justify-between m-2">
                                     <div className="flex items-center">
-                                        <input className="accent-blue-700" id="inputRememberPassword" type="checkbox" name="remember"/>
+                                        <input className="accent-blue-700" id="inputRememberPassword" type="checkbox" name="remember"
+                                               checked={lembrar}
+                                               onChange={()=>setLembrar(!lembrar)}
+                                        />
                                         <label className="block text-sm font-medium leading-6 text-gray-900 p-1" htmlFor="inputRememberPassword">Lembrar Credenciais</label>
                                     </div>
                                     <div className="">
