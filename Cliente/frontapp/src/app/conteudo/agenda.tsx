@@ -135,13 +135,13 @@ function Agenda() {
                 setSituacaoAgenda(situacaoAgendaRes.data.situacaoAgenda || []);
                 setTagAtendimento(tagAtendimentoRes.data.tagAtendimento || []);
                 setVendedor(vendedoresRes.data.Operadores || []);
-
+                console.log(agendaRes);        
             } catch (error) {
                 console.error("Erro ao buscar dados:", error);
             }
         };
         
-
+        
         if (totalClientes > 10) {
 
             const totalPages = Math.ceil(totalClientes / quantidadeDeClientesNaPaginaBuscaCliente);
@@ -219,14 +219,10 @@ function Agenda() {
         const dataAtual = new Date();
         const dataAtualZerada = new Date(dataAtual)
         dataAtualZerada.setHours(0, 0, 0, 0);
-        
-        const dataAgendaObj = new Date(dataAgenda);
-        const dataAgendaZerada = new Date(dataAgendaObj)
-        dataAgendaZerada.setHours(0, 0, 0, 0);
 
         const dataAtualString = dataAtualZerada.toISOString().split('T')[0];
-        const dataAgendaString = dataAgendaZerada.toISOString().split('T')[0];
-    
+        const dataAgendaString = dataAgenda.substring(0, 10);
+
         const horaAgendaObj = horaAgenda.split(':');
         const horaAgendaMin = parseInt(horaAgendaObj[0], 10) * 60 + parseInt(horaAgendaObj[1], 10);
 

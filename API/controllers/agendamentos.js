@@ -27,7 +27,6 @@ export const getAgendaDeHoje = (req, res)=>{
         FROM AGENDA LEFT JOIN CLIENTES ON 
         CLIENTES.CODIGO=AGENDA.CLIENTE  
         WHERE AGENDA.TIPO in('AGENDAMENTO','AGENDAMENTO 1H','AGENDAMENTO 1H:30m','AGENDAMENTO 2H') 
-        AND CLIENTES.desativado='False'
         AND AGENDA.DATA_AGENDA=? 
         ORDER BY AGENDA.DATA_AGENDA,AGENDA.HORA_AGENDA`,[dataHoje],async(error, data)=>{
 

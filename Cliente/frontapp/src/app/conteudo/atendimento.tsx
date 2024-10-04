@@ -223,14 +223,10 @@ function Atendimento(){
         const dataAtual = new Date();
         const dataAtualZerada = new Date(dataAtual)
         dataAtualZerada.setHours(0, 0, 0, 0);
-        
-        const dataAgendaObj = new Date(dataAgenda);
-        const dataAgendaZerada = new Date(dataAgendaObj)
-        dataAgendaZerada.setHours(0, 0, 0, 0);
 
         const dataAtualString = dataAtualZerada.toISOString().split('T')[0];
-        const dataAgendaString = dataAgendaZerada.toISOString().split('T')[0];
-    
+        const dataAgendaString = dataAgenda.substring(0, 10);
+
         const horaAgendaObj = horaAgenda.split(':');
         const horaAgendaMin = parseInt(horaAgendaObj[0], 10) * 60 + parseInt(horaAgendaObj[1], 10);
 
