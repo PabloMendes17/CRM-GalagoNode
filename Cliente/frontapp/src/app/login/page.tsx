@@ -18,7 +18,7 @@ function Login(){
         const secretKey = Cookies.get("CrmGalago:token");
         const emailCookie = Cookies.get('CrmGalago:email');
         const senhaCookie = Cookies.get('CrmGalago:senha');
-        console.log(emailCookie+' , '+senhaCookie +' , '+secretKey );
+
 
         if (emailCookie) {
             setEmail(emailCookie);

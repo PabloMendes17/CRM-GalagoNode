@@ -26,9 +26,9 @@ export const getAtendimentosDeHoje = (req, res)=>{
             CLIENTES.CPF
         FROM AGENDA LEFT JOIN CLIENTES ON 
         CLIENTES.CODIGO=AGENDA.CLIENTE  
-        WHERE AGENDA.TIPO ='ATENDIMENTO'  
+        WHERE AGENDA.TIPO ='ATENDIMENTO'
         AND CLIENTES.desativado='False'
-        AND AGENDA.DATA_AGENDA=? 
+        AND AGENDA.DATA_AGENDA=?
         ORDER BY AGENDA.DATA_AGENDA,AGENDA.HORA_AGENDA DESC`,[dataHoje],async(error, data)=>{
 
             if(error){
