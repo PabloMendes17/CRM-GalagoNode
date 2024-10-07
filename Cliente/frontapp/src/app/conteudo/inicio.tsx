@@ -38,7 +38,7 @@ function Inicio(){
                 
                 const atendimentosPorHoraResponse = await makeRequest.get('dashboard/atendimentosporhora', {
                     params: {
-                        dtInicial:primeiraDataMes,
+                        dtInicial:dataHoje,
                         dtFinal: dataHoje
                     }
                 });
