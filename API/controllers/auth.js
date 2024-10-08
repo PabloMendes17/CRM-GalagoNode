@@ -46,7 +46,11 @@ export const login = (req, res)=>{
                         }, process.env.TOKEN,
                         {algorithm:"HS256"}
                         )
-                        const usuarioLogado=usuario.NOME;
+                        const usuarioLogado = {
+                            NOME: usuario.NOME,
+                            usuario_PARAMetro: usuario.usuario_PARAMetro
+                        };
+                        
                         return res.status(200).json({msg: 'Logado com sucesso',
                                                     data:{usuarioLogado,token:{token,atualizaToken}}
                                                 });
