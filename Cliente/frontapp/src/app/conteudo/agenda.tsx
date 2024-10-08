@@ -987,13 +987,13 @@ function Agenda() {
                                                             value={documento}
                                                             onChange={handleChange}
                                                             placeholder="CNPJ/CPF"
-                                                            className="border rounded p-1"
+                                                            className="dark:bg-slate-800 border rounded p-1 dark:border-gray-600"
                                                         />
                                                     </div>
                                                     <div className='p-1'>
                                                         <p>NOME ou NOME FANTASIA</p>
                                                         <input type="text" id="filtroNomeRazao" name='filtroNomeRazao'
-                                                            placeholder="Nome/NomeFantasia" className="border rounded p-1"
+                                                            placeholder="Nome/NomeFantasia" className="dark:bg-slate-800 border rounded p-1 dark:border-gray-600"
                                                             onChange={(e) => setFiltroNomeRazao(e.target.value)} />
                                                     </div>
                                                     <CheckboxComponente checked={clientesAtivos} onChange={handleAtivo} />
