@@ -103,11 +103,11 @@ export const getAtendimentoPorHora = (req, res)=>{
             }
             if (data.length === 0) {
 
-                const tabelaDeTopAssuntos = [
+                const tabelaAgendaHora = [
                     ['Horario', 'Volume'],
                     ['Nenhum Agendamento', 1] 
                 ];
-                return res.status(200).json({ tabelaDeTopAssuntos });
+                return res.status(200).json({ tabelaAgendaHora });
             }else{
                 
                 const rows = data.map(row=>[row.HORA_AGENDA, parseInt(row.VOLUME)]);
