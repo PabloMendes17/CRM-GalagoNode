@@ -137,7 +137,7 @@ export const getSituacaoAgenda = (req,res) =>{
 export const getTagAtendimentos = (req,res) =>{
     db.query(
 
-        'SELECT * FROM TAG_ATENDIMENTO',async(error, data)=>{
+        'SELECT * FROM TAG_ATENDIMENTO ORDER BY TAG',async(error, data)=>{
 
             if(error){
 
